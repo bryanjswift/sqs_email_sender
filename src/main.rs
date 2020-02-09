@@ -1,15 +1,18 @@
+use log::{info};
 use rusoto_core::{Region, RusotoError};
 use rusoto_sqs::{Message, ReceiveMessageError, ReceiveMessageRequest, Sqs, SqsClient};
 use serde::Deserialize;
 use serde_json;
+use simplelog::{Config, LevelFilter, TermLogger, TerminalMode};
 
 #[tokio::main]
 async fn main() {
+    TermLogger::init(LevelFilter::Info, Config::default(), TerminalMode::Mixed).unwrap();
     let queue = SqsClient::new(Region::UsEast1);
     let messages_result = get_sqs_email_messages(queue.clone()).await;
     match messages_result {
-        Ok(messages) => println!("Process messages, {:?}", messages),
-        Err(error) => println!("{}", error),
+        Ok(messages) => info!("Process messages, {:?}", messages),
+        Err(error) => info!("{}", error),
     }
 }
 
