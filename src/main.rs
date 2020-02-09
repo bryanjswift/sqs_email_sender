@@ -8,15 +8,14 @@ async fn main() {
     let queue = SqsClient::new(Region::UsEast1);
     let messages_result = get_sqs_email_messages(queue.clone()).await;
     match messages_result {
-        Ok(Some(messages)) => println!("Process messages, {:?}", messages),
-        Ok(None) => println!("No messages"),
+        Ok(messages) => println!("Process messages, {:?}", messages),
         Err(error) => println!("{}", error),
     }
 }
 
 async fn get_sqs_email_messages(
     queue: SqsClient,
-) -> Result<Option<SqsEmailMessages>, RusotoError<ReceiveMessageError>> {
+) -> Result<SqsEmailMessages, RusotoError<ReceiveMessageError>> {
     let request = ReceiveMessageRequest {
         attribute_names: Some(vec![String::from("MessageGroupId")]),
         max_number_of_messages: Some(1),
@@ -29,7 +28,7 @@ async fn get_sqs_email_messages(
         wait_time_seconds: Some(20),
     };
     match queue.receive_message(request).await {
-        Ok(result) => Ok(result.messages.map(SqsEmailMessages::new)),
+        Ok(result) => Ok(SqsEmailMessages::new(result.messages.unwrap_or(Vec::new()))),
         Err(error) => Err(error),
     }
 }
