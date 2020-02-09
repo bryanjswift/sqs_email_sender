@@ -1,15 +1,22 @@
-use rusoto_core::Region;
-use rusoto_sqs::{Message, ReceiveMessageRequest, ReceiveMessageResult, Sqs, SqsClient};
+use rusoto_core::{Region, RusotoError};
+use rusoto_sqs::{Message, ReceiveMessageError, ReceiveMessageRequest, Sqs, SqsClient};
 use serde::Deserialize;
 use serde_json;
 
 #[tokio::main]
 async fn main() {
     let queue = SqsClient::new(Region::UsEast1);
-    get_msg(queue.clone()).await;
+    let messages_result = get_sqs_email_messages(queue.clone()).await;
+    match messages_result {
+        Ok(Some(messages)) => println!("Process messages, {:?}", messages),
+        Ok(None) => println!("No messages"),
+        Err(error) => println!("{}", error),
+    }
 }
 
-async fn get_msg(queue: SqsClient) {
+async fn get_sqs_email_messages(
+    queue: SqsClient,
+) -> Result<Option<SqsEmailMessages>, RusotoError<ReceiveMessageError>> {
     let request = ReceiveMessageRequest {
         attribute_names: Some(vec![String::from("MessageGroupId")]),
         max_number_of_messages: Some(1),
@@ -22,18 +29,8 @@ async fn get_msg(queue: SqsClient) {
         wait_time_seconds: Some(20),
     };
     match queue.receive_message(request).await {
-        Ok(result) => process_result(result),
-        Err(error) => println!("{}", error),
-    }
-}
-
-fn process_result(result: ReceiveMessageResult) {
-    let data = result.messages;
-    let messages = data.map(SqsEmailMessages::new);
-    if messages.is_some() {
-        for message in messages.unwrap() {
-            println!("{:?}", message);
-        }
+        Ok(result) => Ok(result.messages.map(SqsEmailMessages::new)),
+        Err(error) => Err(error),
     }
 }
 
