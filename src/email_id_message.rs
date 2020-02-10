@@ -40,10 +40,14 @@ impl EmailIdMessage {
     }
 
     pub fn as_dynamodb_input(self) -> GetItemInput {
-        let mut email_id_attribute: AttributeValue = AttributeValue::default();
-        email_id_attribute.s = Some(self.email_id);
-        let mut input: GetItemInput = GetItemInput::default();
-        input.table_name = String::from("emails_test_db");
+        let email_id_attribute = AttributeValue {
+            s: Some(self.email_id),
+            ..AttributeValue::default()
+        };
+        let mut input = GetItemInput {
+            table_name: String::from("emails_test_db"),
+            ..GetItemInput::default()
+        };
         input
             .key
             .insert(String::from("EmailId"), email_id_attribute);
