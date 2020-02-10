@@ -1,4 +1,4 @@
-use log::{info};
+use log::{info, error};
 use rusoto_core::{Region, RusotoError};
 use rusoto_dynamodb::{AttributeValue, GetItemInput};
 use rusoto_sqs::{Message, ReceiveMessageError, ReceiveMessageRequest, Sqs, SqsClient};
@@ -13,7 +13,7 @@ async fn main() {
     let messages_result = get_sqs_email_messages(queue.clone()).await;
     match messages_result {
         Ok(messages) => info!("Process messages, {:?}", messages),
-        Err(error) => info!("{}", error),
+        Err(error) => error!("{}", error),
     }
 }
 
