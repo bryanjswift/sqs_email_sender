@@ -1,6 +1,6 @@
 use log::{info, error};
 use rusoto_core::{Region, RusotoError};
-use rusoto_dynamodb::{AttributeValue, GetItemInput};
+use rusoto_dynamodb::{AttributeValue, DynamoDb, DynamoDbClient, GetItemInput};
 use rusoto_sqs::{Message, ReceiveMessageError, ReceiveMessageRequest, Sqs, SqsClient};
 use serde::Deserialize;
 use serde_json;
@@ -12,8 +12,19 @@ async fn main() {
     let queue = SqsClient::new(Region::UsEast1);
     let messages_result = get_sqs_email_messages(queue.clone()).await;
     match messages_result {
-        Ok(messages) => info!("Process messages, {:?}", messages),
+        Ok(messages) => process_messages(messages).await,
         Err(error) => error!("{}", error),
+    }
+}
+
+async fn process_messages(messages: SqsEmailMessages) {
+    info!("Process messages, {:?}", messages);
+    let client = DynamoDbClient::new(Region::UsEast1);
+    for message in messages {
+        match client.get_item(message.as_dynamodb_input()).await {
+            Ok(item) => info!("{:?}", item),
+            Err(error) => error!("{}", error),
+        }
     }
 }
 
