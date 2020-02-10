@@ -1,10 +1,13 @@
+mod sqs_email_message;
+mod sqs_email_messages;
+
 use log::{info, error};
 use rusoto_core::{Region, RusotoError};
-use rusoto_dynamodb::{AttributeValue, DynamoDb, DynamoDbClient, GetItemInput};
-use rusoto_sqs::{Message, ReceiveMessageError, ReceiveMessageRequest, Sqs, SqsClient};
-use serde::Deserialize;
-use serde_json;
+use rusoto_dynamodb::{DynamoDb, DynamoDbClient};
+use rusoto_sqs::{ReceiveMessageError, ReceiveMessageRequest, Sqs, SqsClient};
 use simplelog::{Config, LevelFilter, TermLogger, TerminalMode};
+
+use sqs_email_messages::SqsEmailMessages;
 
 #[tokio::main]
 async fn main() {
@@ -45,86 +48,5 @@ async fn get_sqs_email_messages(
     match queue.receive_message(request).await {
         Ok(result) => Ok(SqsEmailMessages::new(result.messages.unwrap_or(Vec::new()))),
         Err(error) => Err(error),
-    }
-}
-
-#[derive(Debug)]
-struct SqsEmailMessages {
-    messages: Vec<Message>,
-}
-
-impl SqsEmailMessages {
-    fn new(messages: Vec<Message>) -> SqsEmailMessages {
-        SqsEmailMessages { messages: messages }
-    }
-}
-
-impl Iterator for SqsEmailMessages {
-    type Item = SqsEmailMessage;
-
-    /// Get the next email message identifier from a list of SQS `Message`s. If the current
-    /// `Message` does not represent an email message identifier skip it and try the next one.
-    ///
-    /// Returns [`None`] when there are no `Message` instances left to try, once [`None`] is
-    /// returned there will be no additional [`Some(SqsEmailMessage)`] forthcoming.
-    ///
-    /// [`None`]: https://doc.rust-lang.org/stable/std/option/enum.Option.html#variant.None
-    /// [`Some(Item)`]: https://doc.rust-lang.org/stable/std/option/enum.Option.html#variant.Some
-    fn next(&mut self) -> Option<SqsEmailMessage> {
-        if self.messages.is_empty() {
-            return None;
-        }
-        let message = self.messages.remove(0);
-        let email = SqsEmailMessage::from_message(message);
-        match email {
-            Some(item) => Some(item),
-            None => self.next(),
-        }
-    }
-}
-
-#[derive(Deserialize, Debug)]
-struct EmailPointer {
-    email_id: String,
-}
-
-impl EmailPointer {
-    fn from_json(json: Option<String>) -> Option<EmailPointer> {
-        match json.map(|json| serde_json::from_str(&json)) {
-            Some(Ok(pointer)) => Some(pointer),
-            _ => None,
-        }
-    }
-}
-
-#[derive(Debug)]
-struct SqsEmailMessage {
-    id: String,
-    handle: String,
-    email_id: String,
-}
-
-impl SqsEmailMessage {
-    fn from_message(message: Message) -> Option<SqsEmailMessage> {
-        let id = message.message_id;
-        let handle = message.receipt_handle;
-        let body = EmailPointer::from_json(message.body);
-        match (id, handle, body) {
-            (Some(id), Some(handle), Some(pointer)) => Some(SqsEmailMessage {
-                id: id,
-                handle: handle,
-                email_id: pointer.email_id,
-            }),
-            _ => None,
-        }
-    }
-
-    fn as_dynamodb_input(self) -> GetItemInput {
-        let mut email_id_attribute: AttributeValue = AttributeValue::default();
-        email_id_attribute.s = Some(self.email_id);
-        let mut input: GetItemInput = GetItemInput::default();
-        input.table_name = String::from("emails_test_db");
-        input.key.insert(String::from("EmailId"), email_id_attribute);
-        input
     }
 }
