@@ -1,4 +1,4 @@
-mod sqs_email_message;
+mod email_id_message;
 mod sqs_email_messages;
 
 use log::{info, error};
