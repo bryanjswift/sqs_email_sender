@@ -5,13 +5,13 @@ use log::{info, error};
 use rusoto_core::{Region, RusotoError};
 use rusoto_dynamodb::{DynamoDb, DynamoDbClient};
 use rusoto_sqs::{ReceiveMessageError, ReceiveMessageRequest, Sqs, SqsClient};
-use simplelog::{Config, LevelFilter, TermLogger, TerminalMode};
+use simplelog::{Config as LogConfig, LevelFilter, TermLogger, TerminalMode};
 
 use sqs_email_messages::SqsEmailMessages;
 
 #[tokio::main]
 async fn main() {
-    TermLogger::init(LevelFilter::Info, Config::default(), TerminalMode::Mixed).unwrap();
+    TermLogger::init(LevelFilter::Info, LogConfig::default(), TerminalMode::Mixed).unwrap();
     let queue = SqsClient::new(Region::UsEast1);
     let messages_result = get_sqs_email_messages(queue.clone()).await;
     match messages_result {
