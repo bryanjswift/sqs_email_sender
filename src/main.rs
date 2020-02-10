@@ -1,5 +1,6 @@
 use log::{info};
 use rusoto_core::{Region, RusotoError};
+use rusoto_dynamodb::{AttributeValue, GetItemInput};
 use rusoto_sqs::{Message, ReceiveMessageError, ReceiveMessageRequest, Sqs, SqsClient};
 use serde::Deserialize;
 use serde_json;
@@ -105,5 +106,14 @@ impl SqsEmailMessage {
             }),
             _ => None,
         }
+    }
+
+    fn as_dynamodb_input(self) -> GetItemInput {
+        let mut email_id_attribute: AttributeValue = AttributeValue::default();
+        email_id_attribute.s = Some(self.email_id);
+        let mut input: GetItemInput = GetItemInput::default();
+        input.table_name = String::from("emails_test_db");
+        input.key.insert(String::from("EmailId"), email_id_attribute);
+        input
     }
 }
