@@ -74,7 +74,7 @@ async fn main() {
         ..Config::default()
     };
     let queue = SqsClient::new(Region::UsEast1);
-    let messages_result = get_sqs_email_messages(config, queue).await;
+    let messages_result = get_sqs_email_messages(&config.queue_url, &queue).await;
     match messages_result {
         Ok(messages) => process_messages(messages).await,
         Err(error) => error!("{}", error),
@@ -93,8 +93,8 @@ async fn process_messages(messages: SqsEmailMessages) {
 }
 
 async fn get_sqs_email_messages(
-    config: Config,
-    queue: SqsClient,
+    queue_url: &str,
+    sqs: &SqsClient,
 ) -> Result<SqsEmailMessages, RusotoError<ReceiveMessageError>> {
     let request = ReceiveMessageRequest {
         attribute_names: Some(vec![String::from("MessageGroupId")]),
@@ -102,7 +102,7 @@ async fn get_sqs_email_messages(
         queue_url: queue_url.into(),
         ..ReceiveMessageRequest::default()
     };
-    match queue.receive_message(request).await {
+    match sqs.receive_message(request).await {
         Ok(result) => Ok(SqsEmailMessages::new(result.messages.unwrap_or(Vec::new()))),
         Err(error) => Err(error),
     }
