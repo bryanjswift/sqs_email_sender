@@ -99,11 +99,8 @@ async fn get_sqs_email_messages(
     let request = ReceiveMessageRequest {
         attribute_names: Some(vec![String::from("MessageGroupId")]),
         max_number_of_messages: Some(1),
-        message_attribute_names: None,
-        queue_url: config.queue_url,
-        receive_request_attempt_id: None,
-        visibility_timeout: Some(10),
-        wait_time_seconds: Some(20),
+        queue_url: queue_url.into(),
+        ..ReceiveMessageRequest::default()
     };
     match queue.receive_message(request).await {
         Ok(result) => Ok(SqsEmailMessages::new(result.messages.unwrap_or(Vec::new()))),
