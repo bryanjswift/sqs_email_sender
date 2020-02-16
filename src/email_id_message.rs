@@ -17,7 +17,7 @@ impl EmailPointer {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct EmailIdMessage {
     message_id: String,
     handle: String,
