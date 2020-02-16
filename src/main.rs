@@ -10,6 +10,14 @@ use simplelog::{Config as LogConfig, LevelFilter, TermLogger, TerminalMode};
 use email_id_message::EmailIdMessage;
 use sqs_email_messages::SqsEmailMessages;
 
+/// Hold references to external service clients so they only need to be allocated once.
+struct Client<'a> {
+    /// Connection to DynamoDB
+    dynamodb: &'a DynamoDbClient,
+    /// Connection to SQS
+    sqs: &'a SqsClient,
+}
+
 /// Defines the configuration for how the email service executable will interact with external
 /// services.
 #[derive(Clone, Debug, Default)]
