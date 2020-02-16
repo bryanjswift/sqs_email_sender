@@ -10,17 +10,48 @@ use simplelog::{Config as LogConfig, LevelFilter, TermLogger, TerminalMode};
 use email_id_message::EmailIdMessage;
 use sqs_email_messages::SqsEmailMessages;
 
-#[derive(Clone, Debug)]
+/// Defines the configuration for how the email service executable will interact with external
+/// services.
+#[derive(Clone, Debug, Default)]
 struct Config {
+    /// From which email message ids will be read.
     queue_url: String,
+    /// Region from which services provided by AWS will be accessed.
     region: Region,
 }
 
-impl Default for Config {
-    fn default() -> Self {
+impl Config {
+    /// Creates a default `Config` by reading the environment variables.
+    ///
+    /// * `AWS_REGION` corresponds to the region contacted when accessing the services provided by
+    /// AWS. Defaults to a `Region::Custom` for
+    /// [LocalStack](https://github.com/localstack/localstack) if the environment variable does not
+    /// exist.
+    /// * `QUEUE_URL` defines the queue from which messages will be read.
+    ///
+    /// # Panics
+    ///
+    /// * If a region is provided via the `AWS_REGION` environment variable but fails to be parsed.
+    /// * If a `QUEUE_URL` environment variable is not set.
+    ///
+    fn env() -> Self {
+        let region = std::env::var("AWS_REGION")
+            .map(|s| match s.parse::<Region>() {
+                Ok(region) => region,
+                Err(error) => panic!("Unable to parse AWS_REGION={}. {}", s, error),
+            })
+            .unwrap_or(Region::Custom {
+                name: "localstack".into(),
+                endpoint: "localhost".into(),
+            });
+        let queue_url = match std::env::var("QUEUE_URL") {
+            Ok(url) => url,
+            Err(_) => panic!("QUEUE_URL must be provided."),
+        };
         Config {
-            queue_url: String::default(),
-            region: Region::UsEast1,
+            queue_url,
+            region,
+            ..Config::default()
         }
     }
 }
