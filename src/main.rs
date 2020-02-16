@@ -3,10 +3,11 @@ mod sqs_email_messages;
 
 use log::{error, info};
 use rusoto_core::{Region, RusotoError};
-use rusoto_dynamodb::{DynamoDb, DynamoDbClient};
+use rusoto_dynamodb::{DynamoDb, DynamoDbClient, GetItemInput};
 use rusoto_sqs::{ReceiveMessageError, ReceiveMessageRequest, Sqs, SqsClient};
 use simplelog::{Config as LogConfig, LevelFilter, TermLogger, TerminalMode};
 
+use email_id_message::EmailIdMessage;
 use sqs_email_messages::SqsEmailMessages;
 
 #[derive(Clone, Debug)]
@@ -45,7 +46,7 @@ async fn process_messages(messages: SqsEmailMessages) {
     info!("Process messages, {:?}", messages);
     let client = DynamoDbClient::new(Region::UsEast1);
     for message in messages {
-        match client.get_item(message.as_dynamodb_input()).await {
+        match client.get_item(GetItemInput::from(message)).await {
             Ok(item) => info!("{:?}", item),
             Err(error) => error!("{}", error),
         }

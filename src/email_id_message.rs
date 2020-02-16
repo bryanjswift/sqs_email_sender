@@ -38,10 +38,12 @@ impl EmailIdMessage {
             _ => None,
         }
     }
+}
 
-    pub fn as_dynamodb_input(self) -> GetItemInput {
+impl From<EmailIdMessage> for GetItemInput {
+    fn from(message: EmailIdMessage) -> Self {
         let email_id_attribute = AttributeValue {
-            s: Some(self.email_id),
+            s: Some(message.email_id),
             ..AttributeValue::default()
         };
         let mut input = GetItemInput {
