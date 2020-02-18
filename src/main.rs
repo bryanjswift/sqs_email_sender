@@ -88,9 +88,10 @@ async fn main() {
 async fn process_messages(client: &Client<'_>, messages: SqsEmailMessages) {
     info!("Process messages, {:?}", messages);
     for message in messages {
-        match client.get_item(GetItemInput::from(message)).await {
-            Ok(item) => info!("{:?}", item),
-            Err(error) => error!("{}", error),
+        let email_message = get_email_message(client.dynamodb, message).await;
+        match email_message {
+            Ok(item) => info!("get_email_message: {:?}", item),
+            Err(error) => error!("get_email_message: {}", error),
         }
     }
 }
