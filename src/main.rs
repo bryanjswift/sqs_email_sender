@@ -71,23 +71,22 @@ impl Config {
 #[tokio::main]
 async fn main() {
     TermLogger::init(LevelFilter::Info, LogConfig::default(), TerminalMode::Mixed).unwrap();
-    let config = Config {
-        queue_url: std::env::var("QUEUE_URL").unwrap_or(String::from(
-            "https://sqs.us-east-1.amazonaws.com/161895662097/email_test_queue",
-        )),
-        ..Config::default()
+    let config = Config::env();
+    info!("{:?}", config);
+    let sqs = SqsClient::new(config.region.clone());
+    let dynamodb = DynamoDbClient::new(config.region.clone());
+    let client = Client {
+        dynamodb: &dynamodb,
+        sqs: &sqs,
     };
-    let queue = SqsClient::new(Region::UsEast1);
-    let messages_result = get_sqs_email_messages(&config.queue_url, &queue).await;
-    match messages_result {
-        Ok(messages) => process_messages(messages).await,
-        Err(error) => error!("{}", error),
+    match get_sqs_email_messages(&config.queue_url, client.sqs).await {
+        Ok(messages) => process_messages(&client, messages).await,
+        Err(error) => error!("get_sqs_email_messages: {}", error),
     }
 }
 
-async fn process_messages(messages: SqsEmailMessages) {
+async fn process_messages(client: &Client<'_>, messages: SqsEmailMessages) {
     info!("Process messages, {:?}", messages);
-    let client = DynamoDbClient::new(Region::UsEast1);
     for message in messages {
         match client.get_item(GetItemInput::from(message)).await {
             Ok(item) => info!("{:?}", item),
