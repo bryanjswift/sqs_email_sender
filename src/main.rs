@@ -1,15 +1,17 @@
 mod attribute_value_wrapper;
 mod email_id_message;
+mod email_message;
 mod sqs_email_messages;
 
 use log::{error, info};
 use rusoto_core::{Region, RusotoError};
-use rusoto_dynamodb::{DynamoDb, DynamoDbClient, GetItemError, GetItemInput, GetItemOutput};
+use rusoto_dynamodb::{DynamoDb, DynamoDbClient, GetItemInput};
 use rusoto_sqs::{ReceiveMessageError, ReceiveMessageRequest, Sqs, SqsClient};
 use simplelog::{Config as LogConfig, LevelFilter, TermLogger, TerminalMode};
 use std::convert::TryFrom;
 
 use email_id_message::EmailIdMessage;
+use email_message::{EmailMessage, ParseEmailMessageCode};
 use sqs_email_messages::SqsEmailMessages;
 
 /// Hold references to external service clients so they only need to be allocated once.
@@ -107,88 +109,5 @@ async fn get_sqs_email_messages(
     match sqs.receive_message(request).await {
         Ok(result) => Ok(SqsEmailMessages::new(result.messages.unwrap_or(Vec::new()))),
         Err(error) => Err(error),
-    }
-}
-
-type Recipient = String;
-
-#[derive(Clone, Debug, Default)]
-struct EmailMessageAttachment {
-    body: String,
-    name: String,
-    content_type: String,
-    size: i32,
-    e_tag: String,
-    last_modified: String,
-}
-
-#[derive(Clone, Debug, Default)]
-struct EmailMessage {
-    attachments: Vec<EmailMessageAttachment>,
-    body_html: String,
-    body_text: String,
-    email_id: String,
-    failed_count: i32,
-    message_id: Option<String>,
-    provider: String,
-    provider_response: Option<String>,
-    recipients_bcc: Vec<Recipient>,
-    recipients_cc: Vec<Recipient>,
-    recipients_to: Vec<Recipient>,
-    sender: String,
-    sent_count: i32,
-    sent_at: Option<String>,
-    status: String,
-    subject: String,
-    updated_at: String,
-}
-
-impl TryFrom<rusoto_dynamodb::GetItemOutput> for EmailMessage {
-    type Error = FetchEmailMessageCode;
-
-    fn try_from(data: GetItemOutput) -> Result<Self, Self::Error> {
-        let item = data.item.ok_or(FetchEmailMessageCode::RecordNotFound)?;
-        let email_id = item
-            .get("EmailId")
-            .map(|av| av.s.as_ref())
-            .flatten()
-            .ok_or(FetchEmailMessageCode::RecordMissingId)?;
-        Ok(EmailMessage {
-            email_id: email_id.clone(),
-            ..EmailMessage::default()
-        })
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-enum FetchEmailMessageCode {
-    Blocking,
-    Credentials,
-    AwsRequestDispatch,
-    AwsResponseParse,
-    AwsValidation,
-    Service,
-    Unknown,
-    RecordNotFound,
-    RecordMissingId,
-}
-
-impl std::fmt::Display for FetchEmailMessageCode {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        std::fmt::Debug::fmt(self, f)
-    }
-}
-
-impl From<RusotoError<GetItemError>> for FetchEmailMessageCode {
-    fn from(err: RusotoError<GetItemError>) -> Self {
-        match err {
-            RusotoError::Blocking => FetchEmailMessageCode::Blocking,
-            RusotoError::Credentials(_) => FetchEmailMessageCode::Credentials,
-            RusotoError::HttpDispatch(_) => FetchEmailMessageCode::AwsRequestDispatch,
-            RusotoError::ParseError(_) => FetchEmailMessageCode::AwsResponseParse,
-            RusotoError::Service(_) => FetchEmailMessageCode::Service,
-            RusotoError::Unknown(_) => FetchEmailMessageCode::Unknown,
-            RusotoError::Validation(_) => FetchEmailMessageCode::AwsValidation,
-        }
     }
 }
