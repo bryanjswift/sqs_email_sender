@@ -1,3 +1,4 @@
+mod attribute_value_wrapper;
 mod email_id_message;
 mod sqs_email_messages;
 
