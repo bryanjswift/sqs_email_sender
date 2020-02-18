@@ -96,6 +96,20 @@ async fn process_messages(messages: SqsEmailMessages) {
     }
 }
 
+async fn get_email_message(
+    client: &DynamoDbClient,
+    message: EmailIdMessage,
+) -> Result<EmailMessage, ParseEmailMessageCode> {
+    let response = client.get_item(GetItemInput::from(message)).await;
+    match response {
+        Ok(output) => EmailMessage::try_from(output),
+        Err(error) => {
+            error!("get_email_message: {}", error);
+            Err(ParseEmailMessageCode::RecordUnreachable)
+        },
+    }
+}
+
 async fn get_sqs_email_messages(
     queue_url: &str,
     sqs: &SqsClient,
