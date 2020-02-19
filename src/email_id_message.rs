@@ -40,6 +40,15 @@ impl EmailIdMessage {
     }
 }
 
+impl std::fmt::Display for EmailIdMessage {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("EmailIdMessage")
+            .field("email_id", &self.email_id)
+            .field("message_id", &self.message_id)
+            .finish()
+    }
+}
+
 impl From<EmailIdMessage> for GetItemInput {
     fn from(message: EmailIdMessage) -> Self {
         let email_id_attribute = AttributeValue {
