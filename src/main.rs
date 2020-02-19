@@ -106,7 +106,7 @@ async fn get_email_message(
         Err(error) => {
             error!("get_email_message: {}", error);
             Err(ParseEmailMessageCode::RecordUnreachable)
-        },
+        }
     }
 }
 
