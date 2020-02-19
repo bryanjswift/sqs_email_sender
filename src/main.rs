@@ -125,3 +125,8 @@ async fn get_sqs_email_messages(
         Err(error) => Err(error),
     }
 }
+
+async fn send_email(email: EmailMessage) -> Result<(), String> {
+    info!("send_email: {:?}", email);
+    Err("Unimplemented".into())
+}
