@@ -6,6 +6,7 @@ mod sqs_email_messages;
 use log::{error, info};
 use rusoto_core::{Region, RusotoError};
 use rusoto_dynamodb::{DynamoDb, DynamoDbClient, GetItemInput};
+use rusoto_sqs::{DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry};
 use rusoto_sqs::{ReceiveMessageError, ReceiveMessageRequest, Sqs, SqsClient};
 use simplelog::{Config as LogConfig, LevelFilter, TermLogger, TerminalMode};
 use std::convert::TryFrom;
@@ -79,10 +80,22 @@ async fn main() {
         dynamodb: &dynamodb,
         sqs: &sqs,
     };
-    match get_sqs_email_messages(&config.queue_url, client.sqs).await {
+    let sent_message_handles = match get_sqs_email_messages(&config.queue_url, client.sqs).await {
         Ok(messages) => process_messages(&client, messages).await,
-        Err(error) => error!("get_sqs_email_messages: {}", error),
-    }
+        Err(error) => {
+            error!("get_sqs_email_messages: {}", error);
+            Vec::new()
+        }
+    };
+    let entries_to_delete = sent_message_handles
+        .iter()
+        .map(DeleteMessageBatchRequestEntry::from)
+        .collect();
+    let delete_messages_request = DeleteMessageBatchRequest {
+        entries: entries_to_delete,
+        queue_url: config.queue_url,
+    };
+    info!("{:?}", delete_messages_request);
 }
 
 async fn process_messages<'a>(
