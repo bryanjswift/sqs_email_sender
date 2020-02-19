@@ -85,14 +85,37 @@ async fn main() {
     }
 }
 
-async fn process_messages(client: &Client<'_>, messages: SqsEmailMessages) {
+async fn process_messages<'a>(
+    client: &Client<'a>,
+    messages: SqsEmailMessages,
+) -> Vec<EmailIdMessage> {
     info!("Process messages, {:?}", messages);
+    let mut sent_message_handles = Vec::new();
     for message in messages {
-        let email_message = get_email_message(client.dynamodb, message).await;
-        match email_message {
-            Ok(item) => info!("get_email_message: {:?}", item),
-            Err(error) => error!("get_email_message: {}", error),
+        match process_message(client, message).await {
+            Ok(id_message) => sent_message_handles.push(id_message),
+            Err(_) => (),
         }
+    }
+    sent_message_handles
+}
+
+async fn process_message<'a>(
+    client: &Client<'a>,
+    message: EmailIdMessage,
+) -> Result<EmailIdMessage, String> {
+    let id_message = message.clone();
+    let email_message = get_email_message(client.dynamodb, message).await;
+    let send_result = match email_message {
+        Ok(email) => send_email(email).await,
+        Err(error) => {
+            error!("process_message: {}: {}", &id_message, error);
+            Err("Unable to Parse Email".into())
+        }
+    };
+    match send_result {
+        Ok(_) => Ok(id_message),
+        Err(msg) => Err(msg),
     }
 }
 
