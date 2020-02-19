@@ -1,5 +1,5 @@
 use rusoto_dynamodb::{AttributeValue, GetItemInput};
-use rusoto_sqs::Message;
+use rusoto_sqs::{DeleteMessageBatchRequestEntry, Message};
 use serde::Deserialize;
 use serde_json;
 
@@ -63,5 +63,14 @@ impl From<EmailIdMessage> for GetItemInput {
             .key
             .insert(String::from("EmailId"), email_id_attribute);
         input
+    }
+}
+
+impl From<&EmailIdMessage> for DeleteMessageBatchRequestEntry {
+    fn from(message: &EmailIdMessage) -> Self {
+        DeleteMessageBatchRequestEntry {
+            id: message.message_id.clone(),
+            receipt_handle: message.handle.clone(),
+        }
     }
 }
