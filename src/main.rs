@@ -27,6 +27,8 @@ struct Client<'a> {
 /// services.
 #[derive(Clone, Debug, Default)]
 struct Config {
+    /// Whether or not this run is a dry run.
+    dry_run: bool,
     /// From which email message ids will be read.
     queue_url: String,
     /// Region from which services provided by AWS will be accessed.
@@ -40,6 +42,8 @@ impl Config {
     /// AWS. Defaults to a `Region::Custom` for
     /// [LocalStack](https://github.com/localstack/localstack) if the environment variable does not
     /// exist.
+    /// * `DRY_RUN` indicates emails should not be transmitted and messages should not be deleted
+    /// from the queue.
     /// * `QUEUE_URL` defines the queue from which messages will be read.
     ///
     /// # Panics
@@ -48,6 +52,7 @@ impl Config {
     /// * If a `QUEUE_URL` environment variable is not set.
     ///
     fn env() -> Self {
+        let dry_run = std::env::var("DRY_RUN").map(|s| s.to_lowercase() == "true").unwrap_or(false);
         let region = std::env::var("AWS_REGION")
             .map(|s| match s.parse::<Region>() {
                 Ok(region) => region,
@@ -62,6 +67,7 @@ impl Config {
             Err(_) => panic!("QUEUE_URL must be provided."),
         };
         Config {
+            dry_run,
             queue_url,
             region,
             ..Config::default()
