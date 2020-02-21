@@ -154,6 +154,8 @@ async fn get_sqs_email_messages(
         attribute_names: Some(vec![String::from("MessageGroupId")]),
         max_number_of_messages: Some(1),
         queue_url: queue_url.into(),
+        visibility_timeout: Some(30),
+        wait_time_seconds: Some(20),
         ..ReceiveMessageRequest::default()
     };
     match sqs.receive_message(request).await {
