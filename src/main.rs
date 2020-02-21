@@ -81,7 +81,7 @@ async fn main() {
         sqs: &sqs,
     };
     let sent_message_handles = match get_sqs_email_messages(&config.queue_url, client.sqs).await {
-        Ok(messages) => process_messages(&client, messages).await,
+        Ok(messages) => process_messages(client.dynamodb, messages).await,
         Err(error) => {
             error!("get_sqs_email_messages: {}", error);
             Vec::new()
@@ -98,14 +98,14 @@ async fn main() {
     info!("{:?}", delete_messages_request);
 }
 
-async fn process_messages<'a>(
-    client: &Client<'a>,
+async fn process_messages(
+    dynamodb: &DynamoDbClient,
     messages: SqsEmailMessages,
 ) -> Vec<EmailIdMessage> {
     info!("Process messages, {:?}", messages);
     let mut sent_message_handles = Vec::new();
     for message in messages {
-        match process_message(client, message).await {
+        match process_message(dynamodb, message).await {
             Ok(id_message) => sent_message_handles.push(id_message),
             Err(_) => (),
         }
@@ -113,12 +113,12 @@ async fn process_messages<'a>(
     sent_message_handles
 }
 
-async fn process_message<'a>(
-    client: &Client<'a>,
+async fn process_message(
+    dynamodb: &DynamoDbClient,
     message: EmailIdMessage,
 ) -> Result<EmailIdMessage, String> {
     let id_message = message.clone();
-    let email_message = get_email_message(client.dynamodb, message).await;
+    let email_message = get_email_message(dynamodb, message).await;
     let send_result = match email_message {
         Ok(email) => send_email(email).await,
         Err(error) => {
