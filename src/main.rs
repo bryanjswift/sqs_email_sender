@@ -52,7 +52,9 @@ impl Config {
     /// * If a `QUEUE_URL` environment variable is not set.
     ///
     fn env() -> Self {
-        let dry_run = std::env::var("DRY_RUN").map(|s| s.to_lowercase() == "true").unwrap_or(false);
+        let dry_run = std::env::var("DRY_RUN")
+            .map(|s| s.to_lowercase() == "true")
+            .unwrap_or(false);
         let region = std::env::var("AWS_REGION")
             .map(|s| match s.parse::<Region>() {
                 Ok(region) => region,
