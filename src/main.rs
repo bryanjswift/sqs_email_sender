@@ -80,14 +80,15 @@ async fn main() {
         dynamodb: &dynamodb,
         sqs: &sqs,
     };
-    let sent_message_handles = match get_sqs_email_messages(&config.queue_url, client.sqs).await {
+    let message_list = get_sqs_email_messages(&config.queue_url, client.sqs).await;
+    let processed_messages = match message_list {
         Ok(messages) => process_messages(client.dynamodb, messages).await,
         Err(error) => {
             error!("get_sqs_email_messages: {}", error);
             Vec::new()
         }
     };
-    let entries_to_delete = sent_message_handles
+    let entries_to_delete = processed_messages
         .iter()
         .map(DeleteMessageBatchRequestEntry::from)
         .collect();
