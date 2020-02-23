@@ -157,7 +157,9 @@ async fn get_email_message(
     client: &DynamoDbClient,
     message: EmailIdMessage,
 ) -> Result<EmailMessage, ParseEmailMessageCode> {
-    let response = client.get_item(GetItemInput::from(message)).await;
+    let mut input = GetItemInput::from(message);
+    input.table_name = "emails_test_db".into();
+    let response = client.get_item(input).await;
     match response {
         Ok(output) => EmailMessage::try_from(output),
         Err(error) => {

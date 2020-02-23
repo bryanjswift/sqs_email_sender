@@ -64,10 +64,7 @@ impl From<EmailIdMessage> for GetItemInput {
             s: Some(message.email_id),
             ..AttributeValue::default()
         };
-        let mut input = GetItemInput {
-            table_name: String::from("emails_test_db"),
-            ..GetItemInput::default()
-        };
+        let mut input = GetItemInput::default();
         input
             .key
             .insert(String::from("EmailId"), email_id_attribute);
