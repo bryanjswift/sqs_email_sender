@@ -33,6 +33,8 @@ struct Config {
     queue_url: String,
     /// Region from which services provided by AWS will be accessed.
     region: Region,
+    /// DynamoDB table from which email data will be read.
+    table_name: String,
 }
 
 impl Config {
@@ -68,10 +70,15 @@ impl Config {
             Ok(url) => url,
             Err(_) => panic!("QUEUE_URL must be provided."),
         };
+        let table_name = match std::env::var("TABLE_NAME") {
+            Ok(name) => name,
+            Err(_) => panic!("TABLE_NAME must be provided."),
+        };
         Config {
             dry_run,
             queue_url,
             region,
+            table_name,
             ..Config::default()
         }
     }

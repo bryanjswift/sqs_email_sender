@@ -36,6 +36,8 @@ how AWS credentials are read.
 - `REGION` defines the AWS region where the SQS queue and DynamoDB table are
   located.
 - `QUEUE_URL` defines the SQS queue polled for messages.
+- `TABLE_NAME` defines the name of the DynamoDB from which email messae data to
+  send will be read.
 - `DRY_RUN` when defined as the string `true` the queue will only be polled a
   single time and no email information will be transmitted to the email sending
   service(s).
