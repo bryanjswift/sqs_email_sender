@@ -55,10 +55,10 @@ impl Config {
     /// * If a `QUEUE_URL` environment variable is not set.
     ///
     fn env() -> Self {
-        let dry_run = std::env::var("DRY_RUN")
+        let dry_run = env::var("DRY_RUN")
             .map(|s| s.to_lowercase() == "true")
             .unwrap_or(false);
-        let region = std::env::var("AWS_REGION")
+        let region = env::var("AWS_REGION")
             .map(|s| match s.parse::<Region>() {
                 Ok(region) => region,
                 Err(error) => panic!("Unable to parse AWS_REGION={}. {}", s, error),
@@ -67,12 +67,12 @@ impl Config {
                 name: "localstack".into(),
                 endpoint: "localhost".into(),
             });
-        let queue_url = match std::env::var("QUEUE_URL") {
+        let queue_url = match env::var("QUEUE_URL") {
             Ok(url) => url,
             Err(env::VarError::NotPresent) => panic!("QUEUE_URL must be provided."),
             Err(_) => panic!("QUEUE_URL could not be read."),
         };
-        let table_name = match std::env::var("TABLE_NAME") {
+        let table_name = match env::var("TABLE_NAME") {
             Ok(name) => name,
             Err(env::VarError::NotPresent) => panic!("TABLE_NAME must be provided."),
             Err(_) => panic!("TABLE_NAME could not be read."),
