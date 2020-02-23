@@ -2,6 +2,7 @@ use rusoto_dynamodb::{AttributeValue, GetItemInput};
 use rusoto_sqs::{DeleteMessageBatchRequestEntry, Message};
 use serde::Deserialize;
 use serde_json;
+use std::convert::TryFrom;
 
 #[derive(Deserialize, Debug)]
 struct EmailPointer {
@@ -26,16 +27,24 @@ pub struct EmailIdMessage {
 
 impl EmailIdMessage {
     pub fn from_message(message: Message) -> Option<EmailIdMessage> {
+        EmailIdMessage::try_from(message).ok()
+    }
+}
+
+impl TryFrom<Message> for EmailIdMessage {
+    type Error = &'static str;
+
+    fn try_from(message: Message) -> Result<Self, Self::Error> {
         let id = message.message_id;
         let handle = message.receipt_handle;
         let body = EmailPointer::from_json(message.body);
         match (id, handle, body) {
-            (Some(id), Some(handle), Some(pointer)) => Some(EmailIdMessage {
+            (Some(id), Some(handle), Some(pointer)) => Ok(EmailIdMessage {
                 message_id: id,
                 handle: handle,
                 email_id: pointer.email_id,
             }),
-            _ => None,
+            _ => Err("Unable to parse message body."),
         }
     }
 }
