@@ -10,6 +10,7 @@ use rusoto_sqs::{DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry};
 use rusoto_sqs::{ReceiveMessageError, ReceiveMessageRequest, Sqs, SqsClient};
 use simplelog::{Config as LogConfig, LevelFilter, TermLogger, TerminalMode};
 use std::convert::TryFrom;
+use std::env;
 
 use email_id_message::EmailIdMessage;
 use email_message::{EmailMessage, ParseEmailMessageCode};
@@ -68,11 +69,13 @@ impl Config {
             });
         let queue_url = match std::env::var("QUEUE_URL") {
             Ok(url) => url,
-            Err(_) => panic!("QUEUE_URL must be provided."),
+            Err(env::VarError::NotPresent) => panic!("QUEUE_URL must be provided."),
+            Err(_) => panic!("QUEUE_URL could not be read."),
         };
         let table_name = match std::env::var("TABLE_NAME") {
             Ok(name) => name,
-            Err(_) => panic!("TABLE_NAME must be provided."),
+            Err(env::VarError::NotPresent) => panic!("TABLE_NAME must be provided."),
+            Err(_) => panic!("TABLE_NAME could not be read."),
         };
         Config {
             dry_run,
