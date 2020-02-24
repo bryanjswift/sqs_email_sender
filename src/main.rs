@@ -16,6 +16,10 @@ use email_id_message::EmailIdMessage;
 use email_message::{EmailMessage, ParseEmailMessageCode};
 use sqs_email_messages::SqsEmailMessages;
 
+thread_local! {
+    pub static CONFIG: Config = Config::env();
+}
+
 /// Hold references to external service clients so they only need to be allocated once.
 struct Client<'a> {
     /// Connection to DynamoDB
@@ -84,6 +88,25 @@ impl Config {
             table_name,
         }
     }
+
+    /// Read the `Region` configured by environment variables out of thread local storage.
+    ///
+    /// # Performance Notes
+    ///
+    /// This clones the value on `Config` in thread local storage.
+    fn region() -> Region {
+        CONFIG.with(|config| config.region.clone())
+    }
+
+    /// Read the DynamoDB table name configured by environment variables out of thread local
+    /// storage.
+    ///
+    /// # Performance Notes
+    ///
+    /// This clones the value on `Config` in thread local storage.
+    fn table_name() -> String {
+        CONFIG.with(|config| config.table_name.clone())
+    }
 }
 
 #[tokio::main]
@@ -91,8 +114,8 @@ async fn main() {
     TermLogger::init(LevelFilter::Info, LogConfig::default(), TerminalMode::Mixed).unwrap();
     let config = Config::env();
     info!("{:?}", config);
-    let sqs = SqsClient::new(config.region.clone());
-    let dynamodb = DynamoDbClient::new(config.region.clone());
+    let sqs = SqsClient::new(Config::region());
+    let dynamodb = DynamoDbClient::new(Config::region());
     let client = Client {
         dynamodb: &dynamodb,
         sqs: &sqs,
@@ -160,7 +183,7 @@ async fn get_email_message(
     message: EmailIdMessage,
 ) -> Result<EmailMessage, ParseEmailMessageCode> {
     let mut input = GetItemInput::from(message);
-    input.table_name = "emails_test_db".into();
+    input.table_name = Config::table_name();
     let response = client.get_item(input).await;
     match response {
         Ok(output) => EmailMessage::try_from(output),
