@@ -27,15 +27,15 @@ struct Client<'a> {
 /// Defines the configuration for how the email service executable will interact with external
 /// services.
 #[derive(Clone, Debug, Default)]
-struct Config {
+pub struct Config {
     /// Whether or not this run is a dry run.
-    dry_run: bool,
+    pub dry_run: bool,
     /// From which email message ids will be read.
-    queue_url: String,
+    pub queue_url: String,
     /// Region from which services provided by AWS will be accessed.
-    region: Region,
+    pub region: Region,
     /// DynamoDB table from which email data will be read.
-    table_name: String,
+    pub table_name: String,
 }
 
 impl Config {
