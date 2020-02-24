@@ -120,8 +120,9 @@ async fn main() {
         dynamodb: &dynamodb,
         sqs: &sqs,
     };
+    let queue_url = &config.queue_url;
     loop {
-        let message_list = get_sqs_email_messages(&config.queue_url, client.sqs).await;
+        let message_list = get_sqs_email_messages(queue_url, client.sqs).await;
         let processed_messages = match message_list {
             Ok(messages) => process_messages(client.dynamodb, messages).await,
             Err(error) => {
@@ -135,7 +136,7 @@ async fn main() {
             .collect();
         let delete_messages_request = DeleteMessageBatchRequest {
             entries: entries_to_delete,
-            queue_url: config.queue_url.clone(),
+            queue_url: queue_url.into(),
         };
         info!("{:?}", delete_messages_request);
         if config.dry_run {
