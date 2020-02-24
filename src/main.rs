@@ -121,8 +121,7 @@ impl Config {
 #[tokio::main]
 async fn main() {
     TermLogger::init(LevelFilter::Info, LogConfig::default(), TerminalMode::Mixed).unwrap();
-    let config = Config::env();
-    info!("{:?}", config);
+    CONFIG.with(|config| info!("{:?}", config));
     let sqs = SqsClient::new(Config::region());
     let dynamodb = DynamoDbClient::new(Config::region());
     let client = Client {
