@@ -74,6 +74,7 @@ cargo test
 DRY_RUN="true" \
   AWS_REGION="us-east-1" \
   QUEUE_URL="https://sqs.us-east-1.amazonaws.com/<account_id>/<queue_name>" \
+  TABLE_NAME="<table_name>" \
   cargo run
 ```
 
