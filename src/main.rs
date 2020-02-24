@@ -89,6 +89,15 @@ impl Config {
         }
     }
 
+    /// Read the SQS queue URL configured by environment variables out of thread local storage.
+    ///
+    /// # Performance Notes
+    ///
+    /// This clones the value on `Config` in thread local storage.
+    fn queue_url() -> String {
+        CONFIG.with(|config| config.queue_url.clone())
+    }
+
     /// Read the `Region` configured by environment variables out of thread local storage.
     ///
     /// # Performance Notes
@@ -120,7 +129,7 @@ async fn main() {
         dynamodb: &dynamodb,
         sqs: &sqs,
     };
-    let queue_url = &config.queue_url;
+    let queue_url = &Config::queue_url();
     loop {
         let message_list = get_sqs_email_messages(queue_url, client.sqs).await;
         let processed_messages = match message_list {
