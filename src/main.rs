@@ -139,7 +139,7 @@ async fn main() {
             queue_url: queue_url.into(),
         };
         info!("{:?}", delete_messages_request);
-        if config.dry_run {
+        if CONFIG.with(|config| config.dry_run) {
             break;
         }
     }
