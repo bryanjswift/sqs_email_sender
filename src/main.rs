@@ -10,10 +10,15 @@ use rusoto_sqs::{DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry};
 use rusoto_sqs::{ReceiveMessageError, ReceiveMessageRequest, Sqs, SqsClient};
 use simplelog::{Config as LogConfig, LevelFilter, TermLogger, TerminalMode};
 use std::convert::TryFrom;
+use std::env;
 
 use email_id_message::EmailIdMessage;
 use email_message::{EmailMessage, ParseEmailMessageCode};
 use sqs_email_messages::SqsEmailMessages;
+
+thread_local! {
+    pub static CONFIG: Config = Config::env();
+}
 
 /// Hold references to external service clients so they only need to be allocated once.
 struct Client<'a> {
@@ -26,13 +31,15 @@ struct Client<'a> {
 /// Defines the configuration for how the email service executable will interact with external
 /// services.
 #[derive(Clone, Debug, Default)]
-struct Config {
+pub struct Config {
     /// Whether or not this run is a dry run.
-    dry_run: bool,
+    pub dry_run: bool,
     /// From which email message ids will be read.
-    queue_url: String,
+    pub queue_url: String,
     /// Region from which services provided by AWS will be accessed.
-    region: Region,
+    pub region: Region,
+    /// DynamoDB table from which email data will be read.
+    pub table_name: String,
 }
 
 impl Config {
@@ -52,10 +59,10 @@ impl Config {
     /// * If a `QUEUE_URL` environment variable is not set.
     ///
     fn env() -> Self {
-        let dry_run = std::env::var("DRY_RUN")
+        let dry_run = env::var("DRY_RUN")
             .map(|s| s.to_lowercase() == "true")
             .unwrap_or(false);
-        let region = std::env::var("AWS_REGION")
+        let region = env::var("AWS_REGION")
             .map(|s| match s.parse::<Region>() {
                 Ok(region) => region,
                 Err(error) => panic!("Unable to parse AWS_REGION={}. {}", s, error),
@@ -64,32 +71,66 @@ impl Config {
                 name: "localstack".into(),
                 endpoint: "localhost".into(),
             });
-        let queue_url = match std::env::var("QUEUE_URL") {
+        let queue_url = match env::var("QUEUE_URL") {
             Ok(url) => url,
-            Err(_) => panic!("QUEUE_URL must be provided."),
+            Err(env::VarError::NotPresent) => panic!("QUEUE_URL must be provided."),
+            Err(_) => panic!("QUEUE_URL could not be read."),
+        };
+        let table_name = match env::var("TABLE_NAME") {
+            Ok(name) => name,
+            Err(env::VarError::NotPresent) => panic!("TABLE_NAME must be provided."),
+            Err(_) => panic!("TABLE_NAME could not be read."),
         };
         Config {
             dry_run,
             queue_url,
             region,
-            ..Config::default()
+            table_name,
         }
+    }
+
+    /// Read the SQS queue URL configured by environment variables out of thread local storage.
+    ///
+    /// # Performance Notes
+    ///
+    /// This clones the value on `Config` in thread local storage.
+    fn queue_url() -> String {
+        CONFIG.with(|config| config.queue_url.clone())
+    }
+
+    /// Read the `Region` configured by environment variables out of thread local storage.
+    ///
+    /// # Performance Notes
+    ///
+    /// This clones the value on `Config` in thread local storage.
+    fn region() -> Region {
+        CONFIG.with(|config| config.region.clone())
+    }
+
+    /// Read the DynamoDB table name configured by environment variables out of thread local
+    /// storage.
+    ///
+    /// # Performance Notes
+    ///
+    /// This clones the value on `Config` in thread local storage.
+    fn table_name() -> String {
+        CONFIG.with(|config| config.table_name.clone())
     }
 }
 
 #[tokio::main]
 async fn main() {
     TermLogger::init(LevelFilter::Info, LogConfig::default(), TerminalMode::Mixed).unwrap();
-    let config = Config::env();
-    info!("{:?}", config);
-    let sqs = SqsClient::new(config.region.clone());
-    let dynamodb = DynamoDbClient::new(config.region.clone());
+    CONFIG.with(|config| info!("{:?}", config));
+    let sqs = SqsClient::new(Config::region());
+    let dynamodb = DynamoDbClient::new(Config::region());
     let client = Client {
         dynamodb: &dynamodb,
         sqs: &sqs,
     };
+    let queue_url = &Config::queue_url();
     loop {
-        let message_list = get_sqs_email_messages(&config.queue_url, client.sqs).await;
+        let message_list = get_sqs_email_messages(queue_url, client.sqs).await;
         let processed_messages = match message_list {
             Ok(messages) => process_messages(client.dynamodb, messages).await,
             Err(error) => {
@@ -103,10 +144,10 @@ async fn main() {
             .collect();
         let delete_messages_request = DeleteMessageBatchRequest {
             entries: entries_to_delete,
-            queue_url: config.queue_url.clone(),
+            queue_url: queue_url.into(),
         };
         info!("{:?}", delete_messages_request);
-        if config.dry_run {
+        if CONFIG.with(|config| config.dry_run) {
             break;
         }
     }
@@ -150,7 +191,9 @@ async fn get_email_message(
     client: &DynamoDbClient,
     message: EmailIdMessage,
 ) -> Result<EmailMessage, ParseEmailMessageCode> {
-    let response = client.get_item(GetItemInput::from(message)).await;
+    let mut input = GetItemInput::from(message);
+    input.table_name = Config::table_name();
+    let response = client.get_item(input).await;
     match response {
         Ok(output) => EmailMessage::try_from(output),
         Err(error) => {

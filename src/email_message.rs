@@ -5,6 +5,31 @@ use std::convert::TryFrom;
 /// A `Recipient` represents an address to which a message will be sent.
 type Recipient = String;
 
+#[derive(Clone, Debug)]
+enum EmailStatus {
+    Pending,
+    Sending,
+    Sent,
+    Unknown,
+}
+
+impl Default for EmailStatus {
+    fn default() -> Self {
+        EmailStatus::Pending
+    }
+}
+
+impl From<&str> for EmailStatus {
+    fn from(status: &str) -> Self {
+        match status {
+            "Pending" => EmailStatus::Pending,
+            "Sending" => EmailStatus::Sending,
+            "Sent" => EmailStatus::Sent,
+            _ => EmailStatus::Unknown,
+        }
+    }
+}
+
 /// An attachment to an `EmailMessage`.
 #[derive(Clone, Debug, Default)]
 struct EmailMessageAttachment {
@@ -51,7 +76,8 @@ pub struct EmailMessage {
     sent_count: i32,
     /// DateTime of first successful email send.
     sent_at: Option<String>,
-    status: String,
+    /// Last known state of the message.
+    status: EmailStatus,
     /// SUBJECT of the email.
     subject: String,
     /// DateTime indicating the last time this record was updated.
