@@ -101,7 +101,7 @@ impl TryFrom<GetItemOutput> for EmailMessage {
 }
 
 /// Possible errors while attempting to pull fields out of `GetItemOutput`.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ParseEmailMessageCode {
     /// The specified record did not exist.
     RecordNotFound,
@@ -117,5 +117,59 @@ pub enum ParseEmailMessageCode {
 impl std::fmt::Display for ParseEmailMessageCode {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         std::fmt::Debug::fmt(self, f)
+    }
+}
+
+#[cfg(test)]
+mod try_from {
+    use super::*;
+    use rusoto_dynamodb::AttributeValue;
+    use std::collections::HashMap;
+
+    #[test]
+    fn fails_on_empty_result() {
+        let output = GetItemOutput {
+            consumed_capacity: None,
+            item: None,
+        };
+        match EmailMessage::try_from(output) {
+            Ok(_) => panic!("Should not have parsed."),
+            Err(code) => assert_eq!(code, ParseEmailMessageCode::RecordNotFound),
+        };
+    }
+
+    #[test]
+    fn fails_missing_id() {
+        let attrs = HashMap::new();
+        let item = Some(attrs);
+        let output = GetItemOutput {
+            consumed_capacity: None,
+            item,
+        };
+        match EmailMessage::try_from(output) {
+            Ok(_) => panic!("Should not have parsed."),
+            Err(code) => assert_eq!(code, ParseEmailMessageCode::RecordMissingId),
+        };
+    }
+
+    #[test]
+    fn fails_missing_subject() {
+        let mut attrs = HashMap::new();
+        attrs.insert(
+            "EmailId".into(),
+            AttributeValue {
+                s: Some("foo".into()),
+                ..AttributeValue::default()
+            },
+        );
+        let item = Some(attrs);
+        let output = GetItemOutput {
+            consumed_capacity: None,
+            item,
+        };
+        match EmailMessage::try_from(output) {
+            Ok(_) => panic!("Should not have parsed."),
+            Err(code) => assert_eq!(code, ParseEmailMessageCode::RecordMissingSubject),
+        };
     }
 }
