@@ -124,7 +124,7 @@ impl Config {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     TermLogger::init(LevelFilter::Info, LogConfig::default(), TerminalMode::Mixed).unwrap();
     CONFIG.with(|config| info!("{:?}", config));
     let sqs = SqsClient::new(Config::region());
@@ -156,6 +156,7 @@ async fn main() {
             break;
         }
     }
+    Ok(())
 }
 
 async fn process_messages(
