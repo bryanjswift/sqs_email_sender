@@ -20,6 +20,8 @@ thread_local! {
     pub static CONFIG: Config = Config::env();
 }
 
+const LOCALSTACK_REGION: &str = "localstack";
+
 /// Hold references to external service clients so they only need to be allocated once.
 struct Client<'a> {
     /// Connection to DynamoDB
@@ -55,22 +57,24 @@ impl Config {
     ///
     /// # Panics
     ///
-    /// * If a region is provided via the `AWS_REGION` environment variable but fails to be parsed.
     /// * If a `QUEUE_URL` environment variable is not set.
+    /// * If a `TABLE_NAME` environment variable is not set.
     ///
     fn env() -> Self {
         let dry_run = env::var("DRY_RUN")
             .map(|s| s.to_lowercase() == "true")
             .unwrap_or(false);
         let region = env::var("AWS_REGION")
-            .map(|s| match s.parse::<Region>() {
-                Ok(region) => region,
-                Err(error) => panic!("Unable to parse AWS_REGION={}. {}", s, error),
-            })
-            .unwrap_or(Region::Custom {
-                name: "localstack".into(),
-                endpoint: "localhost".into(),
-            });
+            .map(|s| if s == LOCALSTACK_REGION {
+                    Region::Custom {
+                        name: LOCALSTACK_REGION.into(),
+                        endpoint: "localhost".into(),
+                    }
+                } else {
+                    Region::default()
+                }
+            )
+            .unwrap_or(Region::default());
         let queue_url = match env::var("QUEUE_URL") {
             Ok(url) => url,
             Err(env::VarError::NotPresent) => panic!("QUEUE_URL must be provided."),
@@ -86,6 +90,7 @@ impl Config {
             queue_url,
             region,
             table_name,
+            ..Config::default()
         }
     }
 
@@ -119,7 +124,7 @@ impl Config {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     TermLogger::init(LevelFilter::Info, LogConfig::default(), TerminalMode::Mixed).unwrap();
     CONFIG.with(|config| info!("{:?}", config));
     let sqs = SqsClient::new(Config::region());
@@ -151,6 +156,7 @@ async fn main() {
             break;
         }
     }
+    Ok(())
 }
 
 async fn process_messages(
