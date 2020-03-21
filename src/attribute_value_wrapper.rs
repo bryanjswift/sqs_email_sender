@@ -51,3 +51,40 @@ impl DynamoItemWrapper {
             .ok_or(error)
     }
 }
+
+#[cfg(test)]
+mod s {
+    use super::*;
+    use std::collections::HashMap;
+
+    const ERROR_MSG: &str = "error";
+    const EMAIL_ID_KEY: &str = "EmailId";
+    const EMAIL_ID_VALUE: &str = "foo";
+
+    fn create_item() -> HashMap<String, AttributeValue> {
+        let mut attributes = HashMap::new();
+        attributes.insert(
+            EMAIL_ID_KEY.into(),
+            AttributeValue {
+                s: Some(EMAIL_ID_VALUE.into()),
+                ..AttributeValue::default()
+            },
+        );
+        attributes
+    }
+
+    #[test]
+    fn error_when_missing() {
+        let wrapper = DynamoItemWrapper::new(create_item());
+        assert_eq!(wrapper.s(EMAIL_ID_VALUE, ERROR_MSG), Err(ERROR_MSG));
+    }
+
+    #[test]
+    fn ok_when_exists() {
+        let wrapper = DynamoItemWrapper::new(create_item());
+        assert_eq!(
+            wrapper.s(EMAIL_ID_KEY, ERROR_MSG),
+            Ok(EMAIL_ID_VALUE.into())
+        );
+    }
+}
