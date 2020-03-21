@@ -31,7 +31,7 @@ how AWS credentials are read.
 
 [rusoto]: https://github.com/rusoto/rusoto
 [credential]: https://crates.io/crates/rusoto_credential
-[credential_chain_provider]: https://docs.rs/rusoto_credential/0.43.0-beta.1/rusoto_credential/struct.ChainProvider.html
+[credential_chain_provider]: https://docs.rs/rusoto_credential/0.43.0/rusoto_credential/struct.ChainProvider.html
 
 - `REGION` defines the AWS region where the SQS queue and DynamoDB table are
   located.
