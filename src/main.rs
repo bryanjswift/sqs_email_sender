@@ -90,6 +90,7 @@ impl Config {
             queue_url,
             region,
             table_name,
+            ..Config::default()
         }
     }
 
