@@ -86,7 +86,7 @@ cargo build --release
 
 ## License
 
-This Paw Extension is released under the [MIT License](LICENSE). Feel free to
+This experiment is released under the [MIT License](LICENSE). Feel free to
 fork, and modify!
 
 Copyright © 2020 Bryan J Swift
