@@ -203,10 +203,7 @@ async fn get_email_message(
     let response = client.get_item(input).await;
     match response {
         Ok(output) => EmailMessage::try_from(output),
-        Err(error) => {
-            error!("get_email_message: {}", error);
-            Err(ParseEmailMessageCode::RecordUnreachable)
-        }
+        Err(error) => Err(ParseEmailMessageCode::from(error)),
     }
 }
 

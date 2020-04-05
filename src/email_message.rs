@@ -1,5 +1,6 @@
 use crate::attribute_value_wrapper::DynamoItemWrapper;
-use rusoto_dynamodb::GetItemOutput;
+use rusoto_core::RusotoError;
+use rusoto_dynamodb::{GetItemError, GetItemOutput};
 use std::convert::TryFrom;
 
 /// A `Recipient` represents an address to which a message will be sent.
@@ -112,6 +113,12 @@ pub enum ParseEmailMessageCode {
     /// The service could not be reached to retrieve a record. This indicates an underlying
     /// problem, check the logs.
     RecordUnreachable,
+}
+
+impl From<RusotoError<GetItemError>> for ParseEmailMessageCode {
+    fn from(_error: RusotoError<GetItemError>) -> ParseEmailMessageCode {
+        ParseEmailMessageCode::RecordUnreachable
+    }
 }
 
 impl From<ParseEmailMessageCode> for String {
