@@ -180,7 +180,7 @@ async fn process_message(
     message: EmailIdMessage,
 ) -> Result<EmailIdMessage, String> {
     let id_message = message.clone();
-    let email_message = get_email_message(dynamodb, message).await;
+    let email_message = get_email_message(dynamodb, &message).await;
     let send_result = match email_message {
         Ok(email) => send_email(email).await,
         Err(error) => {
@@ -196,7 +196,7 @@ async fn process_message(
 
 async fn get_email_message(
     client: &DynamoDbClient,
-    message: EmailIdMessage,
+    message: &EmailIdMessage,
 ) -> Result<EmailMessage, ParseEmailMessageCode> {
     let mut input = GetItemInput::from(message);
     input.table_name = Config::table_name();
