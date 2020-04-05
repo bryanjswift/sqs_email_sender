@@ -165,14 +165,14 @@ async fn process_messages(
     messages: SqsEmailMessages,
 ) -> Vec<EmailIdMessage> {
     info!("Process messages, {:?}", messages);
-    let mut sent_message_handles = Vec::new();
+    let mut processed_message_handles = Vec::new();
     for message in messages {
         match process_message(dynamodb, message).await {
-            Ok(id_message) => sent_message_handles.push(id_message),
-            Err(_) => (),
+            Ok(id_message) => processed_message_handles.push(id_message),
+            Err(_) => (), // TODO: This needs to at least log the error
         }
     }
-    sent_message_handles
+    processed_message_handles
 }
 
 async fn process_message(
