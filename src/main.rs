@@ -65,7 +65,8 @@ impl Config {
             .map(|s| s.to_lowercase() == "true")
             .unwrap_or(false);
         let region = env::var("AWS_REGION")
-            .map(|s| if s == LOCALSTACK_REGION {
+            .map(|s| {
+                if s == LOCALSTACK_REGION {
                     Region::Custom {
                         name: LOCALSTACK_REGION.into(),
                         endpoint: "localhost".into(),
@@ -73,7 +74,7 @@ impl Config {
                 } else {
                     Region::default()
                 }
-            )
+            })
             .unwrap_or(Region::default());
         let queue_url = match env::var("QUEUE_URL") {
             Ok(url) => url,
