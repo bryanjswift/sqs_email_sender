@@ -114,9 +114,26 @@ pub enum ParseEmailMessageCode {
     RecordUnreachable,
 }
 
+impl From<ParseEmailMessageCode> for String {
+    fn from(code: ParseEmailMessageCode) -> String {
+        format!("{}", code)
+    }
+}
+
 impl std::fmt::Display for ParseEmailMessageCode {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         std::fmt::Debug::fmt(self, f)
+    }
+}
+
+#[cfg(test)]
+mod from {
+    use super::*;
+
+    #[test]
+    fn changes_code_to_string() {
+        let output = String::from(ParseEmailMessageCode::RecordUnreachable);
+        assert_eq!(output, "RecordUnreachable");
     }
 }
 
