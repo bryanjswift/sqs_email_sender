@@ -44,11 +44,7 @@ impl DynamoItemWrapper {
     /// assert!(wrapper.s("foo", "bar"), Err("bar"));
     /// ```
     pub fn s<E>(&self, key: &str, error: E) -> Result<String, E> {
-        self.item
-            .get(key)
-            .map(|av| av.s.clone())
-            .flatten()
-            .ok_or(error)
+        self.item.get(key).and_then(|av| av.s.clone()).ok_or(error)
     }
 }
 
