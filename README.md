@@ -31,7 +31,7 @@ how AWS credentials are read.
 
 [rusoto]: https://github.com/rusoto/rusoto
 [credential]: https://crates.io/crates/rusoto_credential
-[credential_chain_provider]: https://docs.rs/rusoto_credential/0.43.0/rusoto_credential/struct.ChainProvider.html
+[credential_chain_provider]: https://docs.rs/rusoto_credential/0.45.0/rusoto_credential/struct.ChainProvider.html
 
 - `AWS_REGION` defines the AWS region where the SQS queue and DynamoDB table
   are located. Specify "localstack" to use a "localhost" endpoint, otherwise
@@ -43,7 +43,7 @@ how AWS credentials are read.
   single time and no email information will be transmitted to the email sending
   service(s).
 
-[region]: https://docs.rs/rusoto_core/0.43.0/rusoto_core/enum.Region.html
+[region]: https://docs.rs/rusoto_core/0.45.0/rusoto_core/enum.Region.html
 
 ## Development
 
