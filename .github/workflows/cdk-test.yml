@@ -1,0 +1,37 @@
+name: Execute CDK Tests
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'infrastructure/cdk/**'
+  pull_request:
+    branches: [master]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [12.x]
+    steps:
+      - uses: actions/checkout@v1
+      - name: Get yarn cache
+        id: yarn-cache
+        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+      - name: Cache node_modules for yarn
+        uses: actions/cache@v1
+        with:
+          path: ${{ steps.yarn-cache.outputs.dir }}
+          key: ${{ runner.os }}-yarn-node${{ matrix.node-version }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-node${{ matrix.node-version }}-${{ hashFiles('yarn.lock') }}
+            ${{ runner.os }}-yarn-node${{ matrix.node-version }}-
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: '"yarn install" and "yarn test:ci"'
+        run: |
+          yarn install
+          yarn workspace @email_service/cdk test:ci
+        env:
+          CI: true
