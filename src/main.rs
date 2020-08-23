@@ -1,7 +1,7 @@
 mod attribute_value_wrapper;
 mod config;
-mod email_id_message;
 mod email_message;
+mod queue;
 mod sqs_email_messages;
 
 use log::{error, info};
@@ -14,8 +14,8 @@ use std::convert::TryFrom;
 use structopt::StructOpt;
 
 use config::Options;
-use email_id_message::EmailIdMessage;
 use email_message::{EmailMessage, ParseEmailMessageCode};
+use queue::EmailPointerMessage;
 use sqs_email_messages::SqsEmailMessages;
 
 /// Hold references to external service clients so they only need to be allocated once.
@@ -67,7 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 impl Client<'_> {
-    async fn process_messages(&self, messages: SqsEmailMessages) -> Vec<EmailIdMessage> {
+    async fn process_messages(&self, messages: SqsEmailMessages) -> Vec<EmailPointerMessage> {
         info!("Process messages, {:?}", messages);
         let mut processed_message_handles = Vec::new();
         for message in messages {
@@ -79,7 +79,10 @@ impl Client<'_> {
         processed_message_handles
     }
 
-    async fn process_message(&self, message: EmailIdMessage) -> Result<EmailIdMessage, String> {
+    async fn process_message(
+        &self,
+        message: EmailPointerMessage,
+    ) -> Result<EmailPointerMessage, String> {
         let id_message = message.clone();
         let email_message = self.get_email_message(&message).await;
         let send_result = match email_message {
@@ -97,7 +100,7 @@ impl Client<'_> {
 
     async fn get_email_message(
         &self,
-        message: &EmailIdMessage,
+        message: &EmailPointerMessage,
     ) -> Result<EmailMessage, ParseEmailMessageCode> {
         let mut input = GetItemInput::from(message);
         input.table_name = self.table_name.into();

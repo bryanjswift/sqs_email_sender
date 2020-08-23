@@ -19,19 +19,19 @@ impl EmailPointer {
 }
 
 #[derive(Clone, Debug)]
-pub struct EmailIdMessage {
+pub struct EmailPointerMessage {
     message_id: String,
     handle: String,
     email_id: String,
 }
 
-impl EmailIdMessage {
-    pub fn from_message(message: Message) -> Option<EmailIdMessage> {
-        EmailIdMessage::try_from(message).ok()
+impl EmailPointerMessage {
+    pub fn from_message(message: Message) -> Option<EmailPointerMessage> {
+        EmailPointerMessage::try_from(message).ok()
     }
 }
 
-impl TryFrom<Message> for EmailIdMessage {
+impl TryFrom<Message> for EmailPointerMessage {
     type Error = &'static str;
 
     fn try_from(message: Message) -> Result<Self, Self::Error> {
@@ -39,7 +39,7 @@ impl TryFrom<Message> for EmailIdMessage {
         let handle = message.receipt_handle;
         let body = EmailPointer::from_json(message.body);
         match (id, handle, body) {
-            (Some(id), Some(handle), Some(pointer)) => Ok(EmailIdMessage {
+            (Some(id), Some(handle), Some(pointer)) => Ok(EmailPointerMessage {
                 message_id: id,
                 handle: handle,
                 email_id: pointer.email_id,
@@ -49,7 +49,7 @@ impl TryFrom<Message> for EmailIdMessage {
     }
 }
 
-impl std::fmt::Display for EmailIdMessage {
+impl std::fmt::Display for EmailPointerMessage {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.debug_struct("EmailIdMessage")
             .field("email_id", &self.email_id)
@@ -58,8 +58,8 @@ impl std::fmt::Display for EmailIdMessage {
     }
 }
 
-impl From<&EmailIdMessage> for GetItemInput {
-    fn from(message: &EmailIdMessage) -> Self {
+impl From<&EmailPointerMessage> for GetItemInput {
+    fn from(message: &EmailPointerMessage) -> Self {
         let email_id_attribute = AttributeValue {
             s: Some(message.email_id.clone()),
             ..AttributeValue::default()
@@ -72,8 +72,8 @@ impl From<&EmailIdMessage> for GetItemInput {
     }
 }
 
-impl From<&EmailIdMessage> for DeleteMessageBatchRequestEntry {
-    fn from(message: &EmailIdMessage) -> Self {
+impl From<&EmailPointerMessage> for DeleteMessageBatchRequestEntry {
+    fn from(message: &EmailPointerMessage) -> Self {
         DeleteMessageBatchRequestEntry {
             id: message.message_id.clone(),
             receipt_handle: message.handle.clone(),
