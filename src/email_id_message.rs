@@ -58,10 +58,10 @@ impl std::fmt::Display for EmailIdMessage {
     }
 }
 
-impl From<EmailIdMessage> for GetItemInput {
-    fn from(message: EmailIdMessage) -> Self {
+impl From<&EmailIdMessage> for GetItemInput {
+    fn from(message: &EmailIdMessage) -> Self {
         let email_id_attribute = AttributeValue {
-            s: Some(message.email_id),
+            s: Some(message.email_id.clone()),
             ..AttributeValue::default()
         };
         let mut input = GetItemInput::default();

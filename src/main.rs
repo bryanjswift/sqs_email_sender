@@ -65,7 +65,8 @@ impl Config {
             .map(|s| s.to_lowercase() == "true")
             .unwrap_or(false);
         let region = env::var("AWS_REGION")
-            .map(|s| if s == LOCALSTACK_REGION {
+            .map(|s| {
+                if s == LOCALSTACK_REGION {
                     Region::Custom {
                         name: LOCALSTACK_REGION.into(),
                         endpoint: "localhost".into(),
@@ -73,7 +74,7 @@ impl Config {
                 } else {
                     Region::default()
                 }
-            )
+            })
             .unwrap_or(Region::default());
         let queue_url = match env::var("QUEUE_URL") {
             Ok(url) => url,
@@ -164,14 +165,14 @@ async fn process_messages(
     messages: SqsEmailMessages,
 ) -> Vec<EmailIdMessage> {
     info!("Process messages, {:?}", messages);
-    let mut sent_message_handles = Vec::new();
+    let mut processed_message_handles = Vec::new();
     for message in messages {
         match process_message(dynamodb, message).await {
-            Ok(id_message) => sent_message_handles.push(id_message),
-            Err(_) => (),
+            Ok(id_message) => processed_message_handles.push(id_message),
+            Err(_) => (), // TODO: This needs to at least log the error
         }
     }
-    sent_message_handles
+    processed_message_handles
 }
 
 async fn process_message(
@@ -179,7 +180,7 @@ async fn process_message(
     message: EmailIdMessage,
 ) -> Result<EmailIdMessage, String> {
     let id_message = message.clone();
-    let email_message = get_email_message(dynamodb, message).await;
+    let email_message = get_email_message(dynamodb, &message).await;
     let send_result = match email_message {
         Ok(email) => send_email(email).await,
         Err(error) => {
@@ -195,20 +196,18 @@ async fn process_message(
 
 async fn get_email_message(
     client: &DynamoDbClient,
-    message: EmailIdMessage,
+    message: &EmailIdMessage,
 ) -> Result<EmailMessage, ParseEmailMessageCode> {
     let mut input = GetItemInput::from(message);
     input.table_name = Config::table_name();
-    let response = client.get_item(input).await;
-    match response {
-        Ok(output) => EmailMessage::try_from(output),
-        Err(error) => {
-            error!("get_email_message: {}", error);
-            Err(ParseEmailMessageCode::RecordUnreachable)
-        }
-    }
+    client
+        .get_item(input)
+        .await
+        .map_err(ParseEmailMessageCode::from)
+        .and_then(EmailMessage::try_from)
 }
 
+/// Poll SQS at the given `queue_url` for new messages providing an iterator for `EmailIdMessage`.
 async fn get_sqs_email_messages(
     queue_url: &str,
     sqs: &SqsClient,
@@ -221,10 +220,10 @@ async fn get_sqs_email_messages(
         wait_time_seconds: Some(20),
         ..ReceiveMessageRequest::default()
     };
-    match sqs.receive_message(request).await {
-        Ok(result) => Ok(SqsEmailMessages::new(result.messages.unwrap_or(Vec::new()))),
-        Err(error) => Err(error),
-    }
+    sqs.receive_message(request)
+        .await
+        .map(|result| result.messages.unwrap_or(Vec::new()))
+        .map(SqsEmailMessages::new)
 }
 
 async fn send_email(email: EmailMessage) -> Result<(), String> {
