@@ -1,4 +1,5 @@
 [workspace]
 members = [
-  "email_broker"
+  "email_broker",
+  "email_shared"
 ]

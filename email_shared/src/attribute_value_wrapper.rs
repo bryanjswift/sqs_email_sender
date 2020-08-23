@@ -8,9 +8,13 @@ use std::collections::HashMap;
 /// # Examples
 ///
 /// ```
+/// use rusoto_dynamodb::AttributeValue;
+/// use std::collections::HashMap;
+/// use email_shared::attribute_value_wrapper::DynamoItemWrapper;
+///
 /// let item: HashMap<String, AttributeValue> = HashMap::new();
 /// let wrapper = DynamoItemWrapper::new(item);
-/// let email_id = wrapper.s("EmailId", FetchEmailMessageCode::RecordMissingId);
+/// let email_id = wrapper.s("EmailId", "Error Message");
 /// assert!(email_id.is_err());
 /// ```
 pub struct DynamoItemWrapper {
@@ -25,6 +29,10 @@ impl DynamoItemWrapper {
     /// # Examples
     ///
     /// ```
+    /// use rusoto_dynamodb::AttributeValue;
+    /// use std::collections::HashMap;
+    /// use email_shared::attribute_value_wrapper::DynamoItemWrapper;
+    ///
     /// let item: HashMap<String, AttributeValue> = HashMap::new();
     /// let wrapper = DynamoItemWrapper::new(item);
     /// ```
@@ -39,9 +47,13 @@ impl DynamoItemWrapper {
     /// # Examples
     ///
     /// ```
+    /// use rusoto_dynamodb::AttributeValue;
+    /// use std::collections::HashMap;
+    /// use email_shared::attribute_value_wrapper::DynamoItemWrapper;
+    ///
     /// let item: HashMap<String, AttributeValue> = HashMap::new();
     /// let wrapper = DynamoItemWrapper::new(item);
-    /// assert!(wrapper.s("foo", "bar"), Err("bar"));
+    /// assert!(wrapper.s("foo", "bar") == Err("bar"));
     /// ```
     pub fn s<E>(&self, key: &str, error: E) -> Result<String, E> {
         self.item.get(key).and_then(|av| av.s.clone()).ok_or(error)

@@ -1,8 +1,4 @@
-mod attribute_value_wrapper;
 mod config;
-mod email_message;
-mod queue;
-mod sqs_email_messages;
 
 use log::{error, info};
 use rusoto_core::RusotoError;
@@ -14,9 +10,9 @@ use std::convert::TryFrom;
 use structopt::StructOpt;
 
 use config::Options;
-use email_message::{EmailMessage, ParseEmailMessageCode};
-use queue::EmailPointerMessage;
-use sqs_email_messages::SqsEmailMessages;
+use email_shared::email_message::{EmailMessage, ParseEmailMessageCode};
+use email_shared::queue::EmailPointerMessage;
+use email_shared::sqs_email_messages::SqsEmailMessages;
 
 /// Hold references to external service clients so they only need to be allocated once.
 struct Client<'a> {

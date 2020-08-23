@@ -232,6 +232,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "email_broker"
 version = "0.1.0"
 dependencies = [
+ "email_shared 0.1.0",
  "log 0.4.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusoto_core 0.45.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusoto_dynamodb 0.45.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -241,6 +242,17 @@ dependencies = [
  "simplelog 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio 0.2.22 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "email_shared"
+version = "0.1.0"
+dependencies = [
+ "rusoto_core 0.45.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rusoto_dynamodb 0.45.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rusoto_sqs 0.45.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.115 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.57 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
