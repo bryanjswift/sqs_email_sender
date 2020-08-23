@@ -7,7 +7,7 @@ interface Tag {
   Value: string;
 }
 
-test('EmaillSenderStack', (t) => {
+test('ScalableEmail', (t) => {
   const app = new App();
   // WHEN
   const stack = new ScalableEmail(app, 'MyTestStack', {stage: 'test'});
