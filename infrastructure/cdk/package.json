@@ -6,6 +6,7 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "tape test/**/*.test.js",
+    "test:ci": "yarn build && yarn test",
     "cdk": "cdk"
   },
   "devDependencies": {
