@@ -1,0 +1,8 @@
+{
+  "typescript-language-server": {
+    "cmd": "npx typescript-language-server --stdio --tsserver-path=.yarn/sdks/typescript/bin/tsserver"
+  },
+  "efm-langserver": {
+    "disabled": true
+  }
+}
