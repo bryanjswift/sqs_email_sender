@@ -16,7 +16,7 @@ fn parse_region(s: &str) -> Region {
 
 #[derive(StructOpt, Debug)]
 #[structopt(
-    name = "email_service",
+    name = "email_broker",
     about = "Transmit pending email ids in SQS with data stored in DynamoDB"
 )]
 pub struct Options {
