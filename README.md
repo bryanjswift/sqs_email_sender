@@ -33,15 +33,17 @@ how AWS credentials are read.
 [credential]: https://crates.io/crates/rusoto_credential
 [credential_chain_provider]: https://docs.rs/rusoto_credential/0.45.0/rusoto_credential/struct.ChainProvider.html
 
-- `AWS_REGION` defines the AWS region where the SQS queue and DynamoDB table
-  are located. Specify "localstack" to use a "localhost" endpoint, otherwise
+Other necessary configuration is provided by command line switches to the
+`email_broker` program.
+
+- `--region` defines the AWS region where the SQS queue and DynamoDB table are
+  located. Specify "localstack" to use a "localhost" endpoint, otherwise
   [rusoto `Region`][region] is used to parse the region.
-- `QUEUE_URL` defines the SQS queue polled for messages.
-- `TABLE_NAME` defines the name of the DynamoDB from which email messae data to
-  send will be read.
-- `DRY_RUN` when defined as the string `true` the queue will only be polled a
-  single time and no email information will be transmitted to the email sending
-  service(s).
+- `--queue-url` defines the SQS queue polled for messages.
+- `--table-name` defines the name of the DynamoDB from which email messae data
+  to send will be read.
+- `--dry-run` when given the queue will only be polled a single time and no
+  email information will be transmitted to the email sending service(s).
 
 [region]: https://docs.rs/rusoto_core/0.45.0/rusoto_core/enum.Region.html
 
@@ -74,11 +76,11 @@ cargo test
 ### Run
 
 ```
-DRY_RUN="true" \
-  AWS_REGION="<region>" \
-  QUEUE_URL="https://sqs.<region>.amazonaws.com/<account_id>/<queue_name>" \
-  TABLE_NAME="<table_name>" \
-  cargo run
+cargo run -- \
+  --dry-run \
+  --region="<region>" \
+  --queue-url="https://sqs.<region>.amazonaws.com/<account_id>/<queue_name>" \
+  --table-name="<table_name>"
 ```
 
 ### Build
