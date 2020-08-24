@@ -1,3 +1,5 @@
+/email_broker/target
+/email_shared/target
 /target
 **/*.rs.bk
 

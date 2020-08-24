@@ -1,0 +1,19 @@
+[package]
+name = "email_broker"
+version = "0.1.0"
+authors = ["Bryan Swift <bryan@bryanjswift.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+email_shared = { version = "0.1.0", path = "../email_shared" }
+log = "0.4.11"
+rusoto_core = "0.45.0"
+rusoto_dynamodb = "0.45.0"
+rusoto_sqs = "0.45.0"
+serde = "1.0.115"
+serde_json = "1.0.57"
+simplelog = "0.8.0"
+structopt = "0.3.16"
+tokio = { version = "0.2.22", features = ["macros", "rt-core"] }

@@ -1,5 +1,6 @@
-use crate::email_id_message::EmailIdMessage;
 use rusoto_sqs::Message;
+
+use crate::queue::EmailPointerMessage;
 
 #[derive(Debug)]
 pub struct SqsEmailMessages {
@@ -13,7 +14,7 @@ impl SqsEmailMessages {
 }
 
 impl Iterator for SqsEmailMessages {
-    type Item = EmailIdMessage;
+    type Item = EmailPointerMessage;
 
     /// Get the next email message identifier from a list of SQS `Message`s. If the current
     /// `Message` does not represent an email message identifier skip it and try the next one.
@@ -23,12 +24,12 @@ impl Iterator for SqsEmailMessages {
     ///
     /// [`None`]: https://doc.rust-lang.org/stable/std/option/enum.Option.html#variant.None
     /// [`Some(Item)`]: https://doc.rust-lang.org/stable/std/option/enum.Option.html#variant.Some
-    fn next(&mut self) -> Option<EmailIdMessage> {
+    fn next(&mut self) -> Option<EmailPointerMessage> {
         if self.messages.is_empty() {
             return None;
         }
         let message = self.messages.remove(0);
-        let email = EmailIdMessage::from_message(message);
+        let email = EmailPointerMessage::from_message(message);
         match email {
             Some(item) => Some(item),
             None => self.next(),
