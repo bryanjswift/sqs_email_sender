@@ -1,4 +1,3 @@
-use rusoto_dynamodb::{AttributeValue, GetItemInput};
 use rusoto_sqs::{DeleteMessageBatchRequestEntry, Message};
 use serde::Deserialize;
 use serde_json;
@@ -10,11 +9,8 @@ struct EmailPointer {
 }
 
 impl EmailPointer {
-    fn from_json(json: Option<String>) -> Option<EmailPointer> {
-        match json.map(|json| serde_json::from_str(&json)) {
-            Some(Ok(pointer)) => Some(pointer),
-            _ => None,
-        }
+    fn from_json(json: String) -> Option<EmailPointer> {
+        serde_json::from_str(&json).ok()
     }
 }
 
@@ -22,7 +18,7 @@ impl EmailPointer {
 pub struct EmailPointerMessage {
     message_id: String,
     handle: String,
-    email_id: String,
+    pub email_id: String,
 }
 
 impl EmailPointerMessage {
@@ -37,14 +33,16 @@ impl TryFrom<Message> for EmailPointerMessage {
     fn try_from(message: Message) -> Result<Self, Self::Error> {
         let id = message.message_id;
         let handle = message.receipt_handle;
-        let body = EmailPointer::from_json(message.body);
+        let body = message.body.map(EmailPointer::from_json).flatten();
         match (id, handle, body) {
             (Some(id), Some(handle), Some(pointer)) => Ok(EmailPointerMessage {
                 message_id: id,
                 handle: handle,
                 email_id: pointer.email_id,
             }),
-            _ => Err("Unable to parse message body."),
+            (None, _, _) => Err("No message id was found"),
+            (Some(_), None, _) => Err("No receipt handle for message"),
+            _ => Err("Unable to parse message."),
         }
     }
 }
@@ -55,20 +53,6 @@ impl std::fmt::Display for EmailPointerMessage {
             .field("email_id", &self.email_id)
             .field("message_id", &self.message_id)
             .finish()
-    }
-}
-
-impl From<&EmailPointerMessage> for GetItemInput {
-    fn from(message: &EmailPointerMessage) -> Self {
-        let email_id_attribute = AttributeValue {
-            s: Some(message.email_id.clone()),
-            ..AttributeValue::default()
-        };
-        let mut input = GetItemInput::default();
-        input
-            .key
-            .insert(String::from("EmailId"), email_id_attribute);
-        input
     }
 }
 

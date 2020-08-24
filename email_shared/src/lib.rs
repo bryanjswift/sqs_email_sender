@@ -1,7 +1,7 @@
 pub mod attribute_value_wrapper;
+pub mod dynamo;
 pub mod email_message;
 pub mod queue;
-pub mod sqs_email_messages;
 
 #[cfg(test)]
 mod tests {

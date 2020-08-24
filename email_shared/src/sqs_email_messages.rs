@@ -1,5 +1,6 @@
-use crate::queue::EmailPointerMessage;
 use rusoto_sqs::Message;
+
+use crate::queue::EmailPointerMessage;
 
 #[derive(Debug)]
 pub struct SqsEmailMessages {
