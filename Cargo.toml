@@ -1,5 +1,6 @@
 [workspace]
 members = [
   "email_broker",
+  "email_lambda",
   "email_shared"
 ]

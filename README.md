@@ -75,8 +75,8 @@ cargo test
 
 ### Run
 
-```
-cargo run -- \
+```shell
+cargo run --bin email_broker -- \
   --dry-run \
   --region="<region>" \
   --queue-url="https://sqs.<region>.amazonaws.com/<account_id>/<queue_name>" \
@@ -87,6 +87,37 @@ cargo run -- \
 
 ```shell
 cargo build --release
+```
+
+#### Build for Lambda
+
+```shell
+# Create executable
+docker run --rm \
+  -e BIN=email_lambda \
+  -e PACKAGE=false \
+  -v ${PWD}:/code \
+  -v ${HOME}/.cargo/registry:/root/.cargo/registry \
+  -v ${HOME}/.cargo/git:/root/.cargo/git \
+  softprops/lambda-rust
+
+# Create the archive
+cp ./target/lambda/release/email_lambda ./bootstrap \
+  && zip email_lambda.zip bootstrap \
+  && rm bootstrap
+
+# Create a lambda
+aws lambda create-function --function-name <function_name> \
+  --handler doesnt.matter \
+  --zip-file fileb://./email_lambda.zip \
+  --runtime provided \
+  --role arn:aws:iam::<account_number>:role/<role_name> \
+  --environment Variables={RUST_BACKTRACE=1} \
+  --tracing-config Mode=Active
+
+# Update the lambda
+aws lambda update-function-code --function-name <function_name> \
+  --zip-file fileb://./email_lambda.zip
 ```
 
 ## License
