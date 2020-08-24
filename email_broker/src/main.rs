@@ -3,7 +3,7 @@ mod config;
 use log::{error, info};
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::{DynamoDb, DynamoDbClient, GetItemInput};
-use rusoto_sqs::{DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry};
+use rusoto_sqs::{DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry, Message};
 use rusoto_sqs::{ReceiveMessageError, ReceiveMessageRequest, Sqs, SqsClient};
 use simplelog::{Config as LogConfig, LevelFilter, TermLogger, TerminalMode};
 use std::convert::TryFrom;
@@ -12,7 +12,6 @@ use structopt::StructOpt;
 use config::Options;
 use email_shared::email_message::{EmailMessage, ParseEmailMessageCode};
 use email_shared::queue::EmailPointerMessage;
-use email_shared::sqs_email_messages::SqsEmailMessages;
 
 /// Hold references to external service clients so they only need to be allocated once.
 struct Client<'a> {
@@ -63,7 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 impl Client<'_> {
-    async fn process_messages(&self, messages: SqsEmailMessages) -> Vec<EmailPointerMessage> {
+    async fn process_messages(&self, messages: Vec<Message>) -> Vec<EmailPointerMessage> {
         info!("Process messages, {:?}", messages);
         let mut processed_message_handles = Vec::new();
         for message in messages {
@@ -75,21 +74,18 @@ impl Client<'_> {
         processed_message_handles
     }
 
-    async fn process_message(
-        &self,
-        message: EmailPointerMessage,
-    ) -> Result<EmailPointerMessage, String> {
-        let id_message = message.clone();
-        let email_message = self.get_email_message(&message).await;
+    async fn process_message(&self, message: Message) -> Result<EmailPointerMessage, String> {
+        let pointer = EmailPointerMessage::try_from(message)?;
+        let email_message = self.get_email_message(&pointer).await;
         let send_result = match email_message {
             Ok(email) => send_email(email).await,
             Err(error) => {
-                error!("process_message: {}: {}", &id_message, error);
+                error!("process_message: {}: {}", &pointer, error);
                 Err("Unable to Parse Email".into())
             }
         };
         match send_result {
-            Ok(_) => Ok(id_message),
+            Ok(_) => Ok(pointer),
             Err(msg) => Err(msg),
         }
     }
@@ -112,7 +108,7 @@ impl Client<'_> {
 async fn get_sqs_email_messages(
     queue_url: &str,
     sqs: &SqsClient,
-) -> Result<SqsEmailMessages, RusotoError<ReceiveMessageError>> {
+) -> Result<Vec<Message>, RusotoError<ReceiveMessageError>> {
     let request = ReceiveMessageRequest {
         attribute_names: Some(vec![String::from("MessageGroupId")]),
         max_number_of_messages: Some(1),
@@ -124,7 +120,6 @@ async fn get_sqs_email_messages(
     sqs.receive_message(request)
         .await
         .map(|result| result.messages.unwrap_or(Vec::new()))
-        .map(SqsEmailMessages::new)
 }
 
 async fn send_email(email: EmailMessage) -> Result<(), String> {
