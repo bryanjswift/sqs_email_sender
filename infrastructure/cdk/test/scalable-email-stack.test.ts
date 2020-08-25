@@ -29,15 +29,19 @@ test('ScalableEmail', (t) => {
     'test',
     'Should have a Stage tag with the passed `stage`'
   );
-  t.deepEqual(
+  t.isEquivalent(
     stack.dependencies,
     [],
     'Should have an empty list of dependencies'
   );
   t.is(
     stack.node.children.length,
-    2,
+    4, // 3 for constructs, 1 to track dependencies
     'Should have child constructs for components'
+  );
+  t.isEquivalent(
+    stack.node.children.map((child) => child.node.id),
+    ['Database', 'Queue', 'Handler', 'AssetParameters']
   );
   t.end();
 });
