@@ -7,6 +7,7 @@ type Props = Parameters;
 
 export class QueueStack extends Construct {
   readonly encryptionKey: CfnOutput;
+  readonly queue: SQSQueue;
   readonly queueUrl: CfnOutput;
 
   constructor(scope: Construct, id: string, props: Props) {
@@ -33,6 +34,7 @@ export class QueueStack extends Construct {
       visibilityTimeout: Duration.seconds(30),
     });
     queue.node.addDependency(queueEncryptionAlias);
+    this.queue = queue;
     this.queueUrl = new CfnOutput(this, 'QueueUrl', {
       value: queue.queueUrl,
       description: 'URL of the Email Messages SQS Queue.',
