@@ -92,19 +92,7 @@ cargo build --release
 #### Build for Lambda
 
 ```shell
-# Create executable
-docker run --rm \
-  -e BIN=email_lambda \
-  -e PACKAGE=false \
-  -v ${PWD}:/code \
-  -v ${HOME}/.cargo/registry:/root/.cargo/registry \
-  -v ${HOME}/.cargo/git:/root/.cargo/git \
-  softprops/lambda-rust
-
-# Create the archive
-cp ./target/lambda/release/email_lambda ./bootstrap \
-  && zip email_lambda.zip bootstrap \
-  && rm bootstrap
+make email_lambda.zip
 
 # Create a lambda
 aws lambda create-function --function-name <function_name> \
