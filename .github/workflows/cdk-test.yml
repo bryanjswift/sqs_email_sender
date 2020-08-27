@@ -32,6 +32,7 @@ jobs:
       - name: '"yarn install" and "yarn test:ci"'
         run: |
           yarn install
+          touch email_lambda.zip
           yarn workspace @email_service/cdk test:ci
         env:
           CI: true
