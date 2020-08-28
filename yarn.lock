@@ -3,7 +3,7 @@
 
 __metadata:
   version: 4
-  cacheKey: 5
+  cacheKey: 6
 
 "@aws-cdk/assert@npm:1.60.0":
   version: 1.60.0
@@ -984,8 +984,8 @@ __metadata:
   linkType: hard
 
 "aws-sdk@npm:^2.736.0":
-  version: 2.738.0
-  resolution: "aws-sdk@npm:2.738.0"
+  version: 2.742.0
+  resolution: "aws-sdk@npm:2.742.0"
   dependencies:
     buffer: 4.9.2
     events: 1.1.1
@@ -996,7 +996,7 @@ __metadata:
     url: 0.10.3
     uuid: 3.3.2
     xml2js: 0.4.19
-  checksum: 03efd993e743740880433d63db490fd15b96c6ab1eb95128c76bba38abb561a52a207e6ced84cd958d2a760aa4526476399ebd6645f3c2ce0213031a6332a970
+  checksum: b9c2dca145b40115dd6fb418d27d4dcdad542556e426ffb29c4cc349120c921187f9864bfb507a098e832b7911b861948e9246ef39e2dbbd144d152c0b5e4e42
   languageName: node
   linkType: hard
 
