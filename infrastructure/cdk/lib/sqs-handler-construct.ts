@@ -7,7 +7,6 @@ import {
   Tracing,
 } from '@aws-cdk/aws-lambda';
 import {SqsEventSource} from '@aws-cdk/aws-lambda-event-sources';
-import {RetentionDays} from '@aws-cdk/aws-logs';
 import {IQueue} from '@aws-cdk/aws-sqs';
 import {existsSync} from 'fs';
 import {join, resolve} from 'path';
@@ -43,7 +42,6 @@ export class SqsHandler extends Construct {
         DYNAMO_TABLE: `email_db_${stage}`,
         QUEUE_URL: queue.queueUrl,
       },
-      logRetention: RetentionDays.ONE_WEEK,
       role: handlerRole,
       functionName: `email_handler_${stage}`,
       handler: 'doesnt.matter',
