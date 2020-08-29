@@ -44,7 +44,7 @@ export class SqsHandler extends Construct {
       },
       role: handlerRole,
       functionName: `email_handler_${stage}`,
-      handler: 'doesnt.matter',
+      handler: 'doesnt.matter.v1',
       runtime: Runtime.PROVIDED,
       tracing: Tracing.ACTIVE,
     });
