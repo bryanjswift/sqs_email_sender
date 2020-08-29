@@ -50,7 +50,7 @@ export class SqsHandler extends Construct {
       tracing: Tracing.ACTIVE,
     });
     fn.currentVersion.addAlias(`live_${stage}`);
-    fn.addEventSource(new SqsEventSource(queue));
+    fn.currentVersion.addEventSource(new SqsEventSource(queue));
     this.fn = fn;
   }
 }
