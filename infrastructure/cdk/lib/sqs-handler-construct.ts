@@ -1,5 +1,5 @@
-import {Construct, CfnOutput, RemovalPolicy} from '@aws-cdk/core';
-import {ManagedPolicy, Role, ServicePrincipal} from '@aws-cdk/aws-iam';
+import {Construct, RemovalPolicy} from '@aws-cdk/core';
+import {Role} from '@aws-cdk/aws-iam';
 import {
   Code,
   Function as LambdaFn,
@@ -13,18 +13,17 @@ import {join, resolve} from 'path';
 import {Parameters} from './parameters';
 
 interface Props extends Parameters {
+  handlerRole: Role;
   queue: IQueue;
 }
 
 export class SqsHandler extends Construct {
-  readonly handlerArn: CfnOutput;
-  readonly handlerVersion: CfnOutput;
-  readonly role: Role;
+  readonly fn: LambdaFn;
 
   constructor(scope: Construct, id: string, props: Props) {
     super(scope, id);
     // Get the "Stage" being deployed
-    const {queue, stage} = props;
+    const {handlerRole, queue, stage} = props;
     //
     const assetPath = resolve(
       join(__dirname, '..', '..', '..', 'email_lambda.zip')
@@ -32,30 +31,6 @@ export class SqsHandler extends Construct {
     if (!existsSync(assetPath)) {
       throw new Error(`${assetPath} must exist for lambda creation.`);
     }
-    // Create AWS Role to use with function
-    const role = new Role(this, 'SqsHandlerRole', {
-      assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
-      description:
-        'Allows Lambda functions to call AWS services in order to process SQS messages as emails.',
-      managedPolicies: [
-        ManagedPolicy.fromManagedPolicyArn(
-          this,
-          'DynamoDB',
-          'arn:aws:iam::aws:policy/service-role/AWSLambdaDynamoDBExecutionRole'
-        ),
-        ManagedPolicy.fromManagedPolicyArn(
-          this,
-          'SQS',
-          'arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole'
-        ),
-        ManagedPolicy.fromManagedPolicyArn(
-          this,
-          'XRay',
-          'arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess'
-        ),
-      ],
-      roleName: `email_handler_role_${stage}`,
-    });
     //
     const fn = new LambdaFn(this, 'SqsHandler', {
       code: Code.fromAsset(assetPath),
@@ -63,7 +38,10 @@ export class SqsHandler extends Construct {
         removalPolicy: RemovalPolicy.RETAIN,
       },
       description: 'Process messages from SQS to send emails.',
-      role,
+      environment: {
+        DYNAMO_TABLE: `email_db_${stage}`,
+      },
+      role: handlerRole,
       functionName: `email_handler_${stage}`,
       handler: 'doesnt.matter',
       runtime: Runtime.PROVIDED,
@@ -71,15 +49,6 @@ export class SqsHandler extends Construct {
     });
     fn.currentVersion.addAlias(`live_${stage}`);
     fn.addEventSource(new SqsEventSource(queue));
-    fn.node.addDependency(role);
-    this.handlerArn = new CfnOutput(this, 'HandlerArn', {
-      value: fn.functionArn,
-      description: 'ARN of the Handler function',
-    });
-    this.handlerVersion = new CfnOutput(this, 'HandlerVersion', {
-      value: fn.currentVersion.version,
-      description: 'Most recently deployed version of the Handler function',
-    });
-    this.role = role;
+    this.fn = fn;
   }
 }

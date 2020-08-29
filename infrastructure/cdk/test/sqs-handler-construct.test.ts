@@ -1,17 +1,17 @@
 import {expect, haveResource, stringLike} from '@aws-cdk/assert';
 import {App, Stack} from '@aws-cdk/core';
-import {Role} from '@aws-cdk/aws-iam';
-import {Function as LambdaFn} from '@aws-cdk/aws-lambda';
+import {AnyPrincipal, Role} from '@aws-cdk/aws-iam';
 import {Queue as SQSQueue} from '@aws-cdk/aws-sqs';
 import test from 'tape';
 import {SqsHandler} from '../lib/sqs-handler-construct';
 
-test('QueueStack', (t) => {
+test('SqsHandlerConstruct', (t) => {
   const app = new App();
   const stack = new Stack(app, 'MyTestStack');
   const queue = new SQSQueue(stack, 'MyTestQueue');
   // WHEN
   const construct = new SqsHandler(stack, 'SqsHandlerConstruct', {
+    handlerRole: new Role(stack, 'MyTestRole', {assumedBy: new AnyPrincipal()}),
     queue,
     stage: 'test',
   });
@@ -23,14 +23,9 @@ test('QueueStack', (t) => {
   );
   t.is(
     construct.node.dependencies.length,
-    2,
+    1,
     'Should have list of dependencies containing each set of dependencies in the construct'
   );
-  // It has a LambdaFn -> Role dependency
-  const roleDep = construct.node.dependencies.find(
-    (node) => node.source instanceof LambdaFn && node.target instanceof Role
-  );
-  t.ok(roleDep, 'There is a dependency from LambdaFn to Role');
   // It has a Queue child
   try {
     // The `@aws-cdk/assert` library is written to be used with Jest. It throws
@@ -64,29 +59,8 @@ test('QueueStack', (t) => {
       e instanceof Error ? e : undefined
     );
   }
-  // Role
-  try {
-    // The `@aws-cdk/assert` library is written to be used with Jest. It throws
-    // if the expectation fails.
-    expect(stack).to(
-      haveResource('AWS::IAM::Role', {
-        RoleName: 'email_handler_role_test',
-        ManagedPolicyArns: [
-          'arn:aws:iam::aws:policy/service-role/AWSLambdaDynamoDBExecutionRole',
-          'arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole',
-          'arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess',
-        ],
-      })
-    );
-  } catch (e) {
-    t.fail('Role with policies exists', e instanceof Error ? e : undefined);
-  }
   // It has an output for handler arn
-  t.ok(construct.handlerArn, 'There is an output for handler ARN');
-  t.is(
-    construct.handlerArn.node.id,
-    'HandlerArn',
-    'At least according to its name'
-  );
+  t.ok(construct.fn, 'There is an output for handler ARN');
+  t.is(construct.fn.node.id, 'SqsHandler', 'At least according to its name');
   t.end();
 });

@@ -1,48 +1,47 @@
-import {CfnOutput, Construct, Duration, RemovalPolicy} from '@aws-cdk/core';
-import {Alias, Key} from '@aws-cdk/aws-kms';
+import {Construct, Duration} from '@aws-cdk/core';
+import {Grant, IGrantable} from '@aws-cdk/aws-iam';
 import {Queue as SQSQueue} from '@aws-cdk/aws-sqs';
+import {KeyConstruct} from './key-construct';
 import {Parameters} from './parameters';
 
 type Props = Parameters;
 
 export class QueueStack extends Construct {
-  readonly encryptionKey: CfnOutput;
+  private readonly keyConstruct: KeyConstruct;
   readonly queue: SQSQueue;
-  readonly queueUrl: CfnOutput;
 
   constructor(scope: Construct, id: string, props: Props) {
     super(scope, id);
     // Get the "Stage" being deployed
     const {stage} = props;
     // Set up SQS
-    const queueEncryptionKey = new Key(this, 'EncryptionKey', {
+    const queueKeyConstruct = new KeyConstruct(this, 'EncryptionKey', {
       description:
         'The key used to encrypt messages sent to and received by the message queue.',
-      enabled: true,
-      enableKeyRotation: true,
-      removalPolicy: RemovalPolicy.DESTROY,
+      serviceName: 'queue',
+      stage,
     });
-    const queueEncryptionAlias = new Alias(this, 'EncryptionKeyAlias', {
-      aliasName: `alias/bryanjswift/email_service/${stage}/sqs`,
-      targetKey: queueEncryptionKey,
-    });
-    queueEncryptionAlias.node.addDependency(queueEncryptionKey);
+    const queueEncryptionKey = queueKeyConstruct.key;
     const queue = new SQSQueue(this, 'Messages', {
       queueName: `email_queue_${stage}`,
-      encryptionMasterKey: queueEncryptionAlias,
+      encryptionMasterKey: queueEncryptionKey,
       retentionPeriod: Duration.days(4),
       visibilityTimeout: Duration.seconds(30),
     });
-    queue.node.addDependency(queueEncryptionAlias);
+    queue.node.addDependency(queueEncryptionKey);
     this.queue = queue;
-    this.queueUrl = new CfnOutput(this, 'QueueUrl', {
-      value: queue.queueUrl,
-      description: 'URL of the Email Messages SQS Queue.',
-    });
-    this.encryptionKey = new CfnOutput(this, 'QueueEncryptionKey', {
-      value: queueEncryptionAlias.keyArn,
-      description:
-        'ARN of the key used to encrypted Email Messages in SQS Queue.',
-    });
+    this.keyConstruct = queueKeyConstruct;
+  }
+
+  grant(grantee: IGrantable, ...actions: string[]): Grant {
+    return this.keyConstruct.grant(grantee, ...actions);
+  }
+
+  grantDecrypt(grantee: IGrantable): Grant {
+    return this.keyConstruct.grantDecrypt(grantee);
+  }
+
+  grantEncrypt(grantee: IGrantable): Grant {
+    return this.keyConstruct.grantEncrypt(grantee);
   }
 }

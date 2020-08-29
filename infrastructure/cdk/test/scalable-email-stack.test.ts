@@ -1,3 +1,4 @@
+import {expect, haveResource} from '@aws-cdk/assert';
 import {App} from '@aws-cdk/core';
 import test from 'tape';
 import {ScalableEmail} from '../lib/scalable-email-stack';
@@ -36,12 +37,34 @@ test('ScalableEmail', (t) => {
   );
   t.is(
     stack.node.children.length,
-    4, // 3 for constructs, 1 to track dependencies
+    9, // 4 for constructs, 1 to track dependencies, 4 for outputs
     'Should have child constructs for components'
   );
   t.isEquivalent(
     stack.node.children.map((child) => child.node.id),
-    ['Database', 'Queue', 'Handler', 'AssetParameters']
+    [
+      'Database',
+      'Queue',
+      'SqsHandlerRole',
+      'Handler',
+      'AssetParameters',
+      'HandlerArn',
+      'HandlerVersion',
+      'QueueUrl',
+      'DatabaseTable',
+    ]
   );
+  // Role
+  try {
+    // The `@aws-cdk/assert` library is written to be used with Jest. It throws
+    // if the expectation fails.
+    expect(stack).to(
+      haveResource('AWS::IAM::Role', {
+        RoleName: 'MyTestStackHandlerRole',
+      })
+    );
+  } catch (e) {
+    t.fail('Role with policies exists', e instanceof Error ? e : undefined);
+  }
   t.end();
 });

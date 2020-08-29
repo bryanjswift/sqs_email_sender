@@ -78,11 +78,7 @@ test('DatabaseStack', (t) => {
     );
   }
   // It has a queue url output
-  t.ok(construct.tableName, 'There is an output for Dynamo Table name');
-  t.is(
-    construct.tableName.node.id,
-    'DatabaseTable',
-    'At least according to its name'
-  );
+  t.ok(construct.table, 'There is a property for the dynamo table');
+  t.is(construct.table.node.id, 'Messages', 'At least according to its name');
   t.end();
 });

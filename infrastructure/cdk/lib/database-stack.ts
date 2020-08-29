@@ -1,35 +1,31 @@
-import {CfnOutput, Construct, RemovalPolicy} from '@aws-cdk/core';
+import {Construct, RemovalPolicy} from '@aws-cdk/core';
 import {
   AttributeType,
   BillingMode,
   Table as DynamoTable,
   TableEncryption,
 } from '@aws-cdk/aws-dynamodb';
-import {Alias, Key} from '@aws-cdk/aws-kms';
+import {Grant, IGrantable} from '@aws-cdk/aws-iam';
+import {KeyConstruct} from './key-construct';
 import {Parameters} from './parameters';
 
 type Props = Parameters;
 
 export class DatabaseStack extends Construct {
-  readonly encryptionKey: CfnOutput;
-  readonly tableName: CfnOutput;
+  private readonly keyConstruct: KeyConstruct;
+  readonly table: DynamoTable;
 
   constructor(scope: Construct, id: string, props: Props) {
     super(scope, id);
     // Get the "Stage" being deployed
     const {stage} = props;
     // Set up Dynamo
-    const databaseEncryptionKey = new Key(this, 'EncryptionKey', {
+    const databaseKeyConstruct = new KeyConstruct(this, 'EncryptionKey', {
       description: 'The key used to encrypt messages stored in the database.',
-      enabled: true,
-      enableKeyRotation: true,
-      removalPolicy: RemovalPolicy.DESTROY,
+      serviceName: 'db',
+      stage,
     });
-    const databaseEncryptionAlias = new Alias(this, 'EncryptionKeyAlias', {
-      aliasName: `alias/bryanjswift/email_service/${stage}/db`,
-      targetKey: databaseEncryptionKey,
-    });
-    databaseEncryptionAlias.node.addDependency(databaseEncryptionKey);
+    const databaseEncryptionKey = databaseKeyConstruct.key;
     const database = new DynamoTable(this, 'Messages', {
       tableName: `email_db_${stage}`,
       partitionKey: {
@@ -38,18 +34,24 @@ export class DatabaseStack extends Construct {
       },
       billingMode: BillingMode.PAY_PER_REQUEST,
       encryption: TableEncryption.CUSTOMER_MANAGED,
-      encryptionKey: databaseEncryptionAlias,
+      encryptionKey: databaseEncryptionKey,
       removalPolicy: RemovalPolicy.DESTROY,
     });
-    database.node.addDependency(databaseEncryptionAlias);
-    this.tableName = new CfnOutput(this, 'DatabaseTable', {
-      value: database.tableName,
-      description: 'Name of the Dynamo Table storing message data.',
-    });
-    this.encryptionKey = new CfnOutput(this, 'DatabaseEncryptionKey', {
-      value: databaseEncryptionAlias.keyArn,
-      description:
-        'ARN of the key used to encrypted Email Messages in Database.',
-    });
+    database.node.addDependency(databaseEncryptionKey);
+    // Set properties
+    this.keyConstruct = databaseKeyConstruct;
+    this.table = database;
+  }
+
+  grant(grantee: IGrantable, ...actions: string[]): Grant {
+    return this.keyConstruct.grant(grantee, ...actions);
+  }
+
+  grantDecrypt(grantee: IGrantable): Grant {
+    return this.keyConstruct.grantDecrypt(grantee);
+  }
+
+  grantEncrypt(grantee: IGrantable): Grant {
+    return this.keyConstruct.grantEncrypt(grantee);
   }
 }

@@ -52,11 +52,7 @@ test('QueueStack', (t) => {
     t.fail('SQS Queue exists in children', e instanceof Error ? e : undefined);
   }
   // It has a queue url output
-  t.ok(construct.queueUrl, 'There is an output for queue url');
-  t.is(
-    construct.queueUrl.node.id,
-    'QueueUrl',
-    'At least according to its name'
-  );
+  t.ok(construct.queue, 'There is a property for queue created queue');
+  t.is(construct.queue.node.id, 'Messages', 'At least according to its name');
   t.end();
 });
