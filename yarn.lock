@@ -733,6 +733,7 @@ __metadata:
     "@aws-cdk/aws-kms": 1.61.1
     "@aws-cdk/aws-lambda": 1.61.1
     "@aws-cdk/aws-lambda-event-sources": 1.61.1
+    "@aws-cdk/aws-logs": 1.61.1
     "@aws-cdk/aws-sqs": 1.61.1
     "@aws-cdk/core": 1.61.1
     "@types/node": 10.17.27
