@@ -1,6 +1,6 @@
 import {Construct, Duration} from '@aws-cdk/core';
 import {Grant, IGrantable} from '@aws-cdk/aws-iam';
-import {Queue as SQSQueue} from '@aws-cdk/aws-sqs';
+import {Queue as SQSQueue, QueueEncryption} from '@aws-cdk/aws-sqs';
 import {KeyConstruct} from './key-construct';
 import {Parameters} from './parameters';
 
@@ -24,6 +24,7 @@ export class QueueStack extends Construct {
     const queueEncryptionKey = queueKeyConstruct.key;
     const queue = new SQSQueue(this, 'Messages', {
       queueName: `email_queue_${stage}`,
+      encryption: QueueEncryption.KMS,
       encryptionMasterKey: queueEncryptionKey,
       retentionPeriod: Duration.days(4),
       visibilityTimeout: Duration.seconds(30),
