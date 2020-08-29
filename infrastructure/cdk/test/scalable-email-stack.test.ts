@@ -37,7 +37,7 @@ test('ScalableEmail', (t) => {
   );
   t.is(
     stack.node.children.length,
-    9, // 4 for constructs, 1 to track dependencies, 4 for outputs
+    10, // 5 for constructs, 1 to track dependencies, 4 for outputs
     'Should have child constructs for components'
   );
   t.isEquivalent(
@@ -45,6 +45,7 @@ test('ScalableEmail', (t) => {
     [
       'Database',
       'Queue',
+      'LambdaExecPolicy',
       'SqsHandlerRole',
       'Handler',
       'AssetParameters',
