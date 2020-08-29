@@ -1,7 +1,7 @@
 mod de;
 
 use de::MessageDef;
-use email_shared::{dynamo::get_email_message, queue::EmailPointerMessage};
+use email_shared::{get_email_message, queue::EmailPointerMessage};
 use lambda_runtime::{error::HandlerError, lambda, Context};
 use log::info;
 use rusoto_core::Region;
