@@ -1,5 +1,5 @@
-import {Aws, CfnOutput, Construct, Stack, StackProps} from '@aws-cdk/core';
-import {AccountPrincipal, Role, ServicePrincipal} from '@aws-cdk/aws-iam';
+import {CfnOutput, Construct, Stack, StackProps} from '@aws-cdk/core';
+import {ArnPrincipal, Role, ServicePrincipal} from '@aws-cdk/aws-iam';
 import {DatabaseStack} from './database-stack';
 import {Parameters} from './parameters';
 import {QueueStack} from './queue-stack';
@@ -47,9 +47,11 @@ export class ScalableEmail extends Stack {
     handlerConstruct.node.addDependency(handlerRole);
     // Add policy to allow key to be used for encryption by account
     // TODO: This should be removed, it is primarily for testing
-    const accountPrincipal = new AccountPrincipal(Aws.ACCOUNT_ID);
-    databaseConstruct.grantEncrypt(accountPrincipal);
-    queueConstruct.grantEncrypt(accountPrincipal);
+    const userPrincipal = new ArnPrincipal(
+      'arn:aws:iam::161895662097:user/bryanjswift'
+    );
+    databaseConstruct.grantEncrypt(userPrincipal);
+    queueConstruct.grantEncrypt(userPrincipal);
     // Assign Outputs
     this.handlerArn = new CfnOutput(this, 'HandlerArn', {
       value: handlerConstruct.fn.functionArn,
