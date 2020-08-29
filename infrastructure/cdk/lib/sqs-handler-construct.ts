@@ -41,6 +41,7 @@ export class SqsHandler extends Construct {
       description: 'Process messages from SQS to send emails.',
       environment: {
         DYNAMO_TABLE: `email_db_${stage}`,
+        QUEUE_URL: queue.queueUrl,
       },
       logRetention: RetentionDays.ONE_WEEK,
       role: handlerRole,
