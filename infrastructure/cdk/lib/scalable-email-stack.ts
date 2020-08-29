@@ -62,8 +62,8 @@ export class ScalableEmail extends Stack {
     const userPrincipal = new ArnPrincipal(
       'arn:aws:iam::161895662097:user/bryanjswift'
     );
-    databaseConstruct.grantEncrypt(userPrincipal);
-    queueConstruct.grantEncrypt(userPrincipal);
+    databaseConstruct.table.grantReadWriteData(userPrincipal);
+    queueConstruct.queue.grantSendMessages(userPrincipal);
     // Assign Outputs
     this.handlerArn = new CfnOutput(this, 'HandlerArn', {
       value: handlerConstruct.fn.functionArn,
