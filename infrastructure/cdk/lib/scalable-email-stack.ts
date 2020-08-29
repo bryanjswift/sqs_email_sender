@@ -54,16 +54,18 @@ export class ScalableEmail extends Stack {
       stage,
     });
     // Dependencies
-    handlerConstruct.node.addDependency(databaseConstruct);
-    handlerConstruct.node.addDependency(queueConstruct);
-    handlerConstruct.node.addDependency(handlerRole);
+    handlerConstruct.addDependency(
+      databaseConstruct,
+      queueConstruct,
+      handlerRole
+    );
     // Add policy to allow key to be used for encryption by account
     // TODO: This should be removed, it is primarily for testing
     const userPrincipal = new ArnPrincipal(
       'arn:aws:iam::161895662097:user/bryanjswift'
     );
-    databaseConstruct.table.grantReadWriteData(userPrincipal);
-    queueConstruct.queue.grantSendMessages(userPrincipal);
+    databaseConstruct.grantWriteData(userPrincipal);
+    queueConstruct.grantSendMessages(userPrincipal);
     // Assign Outputs
     this.handlerArn = new CfnOutput(this, 'HandlerArn', {
       value: handlerConstruct.fn.functionArn,

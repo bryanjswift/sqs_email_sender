@@ -34,15 +34,15 @@ export class QueueStack extends Construct {
     this.keyConstruct = queueKeyConstruct;
   }
 
-  grant(grantee: IGrantable, ...actions: string[]): Grant {
-    return this.keyConstruct.grant(grantee, ...actions);
-  }
-
   grantDecrypt(grantee: IGrantable): Grant {
     return this.keyConstruct.grantDecrypt(grantee);
   }
 
   grantEncrypt(grantee: IGrantable): Grant {
     return this.keyConstruct.grantEncrypt(grantee);
+  }
+
+  grantSendMessages(grantee: IGrantable): Grant {
+    return this.queue.grantSendMessages(grantee);
   }
 }

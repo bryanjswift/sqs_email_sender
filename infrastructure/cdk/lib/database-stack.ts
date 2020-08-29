@@ -43,15 +43,23 @@ export class DatabaseStack extends Construct {
     this.table = database;
   }
 
-  grant(grantee: IGrantable, ...actions: string[]): Grant {
-    return this.keyConstruct.grant(grantee, ...actions);
-  }
-
   grantDecrypt(grantee: IGrantable): Grant {
     return this.keyConstruct.grantDecrypt(grantee);
   }
 
   grantEncrypt(grantee: IGrantable): Grant {
     return this.keyConstruct.grantEncrypt(grantee);
+  }
+
+  grantReadData(grantee: IGrantable): Grant {
+    return this.table.grantReadData(grantee);
+  }
+
+  grantReadWriteData(grantee: IGrantable): Grant {
+    return this.table.grantReadWriteData(grantee);
+  }
+
+  grantWriteData(grantee: IGrantable): Grant {
+    return this.table.grantReadWriteData(grantee);
   }
 }

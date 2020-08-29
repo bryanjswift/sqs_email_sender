@@ -1,4 +1,4 @@
-import {Construct, RemovalPolicy} from '@aws-cdk/core';
+import {Construct, IDependable, RemovalPolicy} from '@aws-cdk/core';
 import {Role} from '@aws-cdk/aws-iam';
 import {
   Code,
@@ -51,5 +51,9 @@ export class SqsHandler extends Construct {
     fn.currentVersion.addAlias(`live_${stage}`);
     fn.currentVersion.addEventSource(new SqsEventSource(queue));
     this.fn = fn;
+  }
+
+  addDependency(...dependencies: IDependable[]): void {
+    this.node.addDependency(...dependencies);
   }
 }
