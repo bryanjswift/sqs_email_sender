@@ -47,7 +47,7 @@ fn handler(event: SqsEvent, _ctx: Context) -> Result<CustomOutput, HandlerError>
         let pointer = EmailPointerMessage::try_from(message)?;
         // 2. Get email data from dynamo db table
         // 3. Parse dynamo data into object for sending
-        info!("Looking for {} in {:?}", &pointer.email_id, &table_name);
+        info!("Looking for {:?} in {:?}", &pointer.email_id, &table_name);
         let _email = get_email_message(&dynamodb, &table_name, &pointer);
         // 4. TODO: Send the message
         // 5. Register the message for deletion
