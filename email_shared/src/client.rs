@@ -1,7 +1,8 @@
-use crate::email_message::{EmailMessage, ParseEmailMessageCode};
+use crate::dynamo::get_email_message;
+use crate::email_message::EmailMessage;
 use crate::queue::EmailPointerMessage;
 use log::{error, info};
-use rusoto_dynamodb::{DynamoDb, DynamoDbClient, GetItemInput};
+use rusoto_dynamodb::DynamoDbClient;
 use rusoto_sqs::Message;
 use std::convert::TryFrom;
 
@@ -35,7 +36,7 @@ impl Client<'_> {
 
     async fn process_message(&self, message: Message) -> Result<EmailPointerMessage, String> {
         let pointer = EmailPointerMessage::try_from(message)?;
-        let email_message = self.get_email_message(&pointer).await;
+        let email_message = get_email_message(self.dynamodb, self.table_name, &pointer).await;
         let send_result = match email_message {
             Ok(email) => Client::send_email(email).await,
             Err(error) => {
@@ -47,19 +48,6 @@ impl Client<'_> {
             Ok(_) => Ok(pointer),
             Err(msg) => Err(msg),
         }
-    }
-
-    async fn get_email_message(
-        &self,
-        message: &EmailPointerMessage,
-    ) -> Result<EmailMessage, ParseEmailMessageCode> {
-        let mut input = GetItemInput::from(message);
-        input.table_name = self.table_name.into();
-        self.dynamodb
-            .get_item(input)
-            .await
-            .map_err(ParseEmailMessageCode::from)
-            .and_then(EmailMessage::try_from)
     }
 
     async fn send_email(email: EmailMessage) -> Result<(), String> {

@@ -1,10 +1,29 @@
 use rusoto_core::RusotoError;
-use rusoto_dynamodb::{AttributeValue, GetItemError, GetItemInput, GetItemOutput};
+use rusoto_dynamodb::{
+    AttributeValue, DynamoDb, DynamoDbClient, GetItemError, GetItemInput, GetItemOutput,
+};
 use std::convert::TryFrom;
 
 use crate::attribute_value_wrapper::DynamoItemWrapper;
 use crate::email_message::{EmailMessage, ParseEmailMessageCode};
 use crate::queue::EmailPointerMessage;
+
+/// Get email data from Dynamo DB and then parse it into an `EmailMessage`. Uses the given
+/// `DynamoDbClient` and attempts to get the item from the given `table_name`. Errors from they
+/// Dynamo DB service are converted into `ParseEmailMessageCode`.
+pub async fn get_email_message(
+    dynamodb: &DynamoDbClient,
+    table_name: &str,
+    message: &EmailPointerMessage,
+) -> Result<EmailMessage, ParseEmailMessageCode> {
+    let mut input = GetItemInput::from(message);
+    input.table_name = table_name.into();
+    dynamodb
+        .get_item(input)
+        .await
+        .map_err(ParseEmailMessageCode::from)
+        .and_then(EmailMessage::try_from)
+}
 
 impl From<&EmailPointerMessage> for GetItemInput {
     fn from(message: &EmailPointerMessage) -> Self {
