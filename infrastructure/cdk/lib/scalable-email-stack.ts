@@ -5,9 +5,9 @@ import {
   Role,
   ServicePrincipal,
 } from '@aws-cdk/aws-iam';
-import {DatabaseStack} from './database-stack';
+import {DatabaseConstruct} from './database-construct';
 import {Parameters} from './parameters';
-import {QueueStack} from './queue-stack';
+import {QueueConstruct} from './queue-construct';
 import {SqsHandler} from './sqs-handler-construct';
 
 type Props = Omit<Parameters, 'stackId'> & StackProps;
@@ -26,11 +26,11 @@ export class ScalableEmail extends Stack {
     this.tags.setTag('Stage', stage);
     this.tags.setTag('Application', 'ScalableEmail');
     // Set up Dynamo
-    const databaseConstruct = new DatabaseStack(this, 'Database', {
+    const databaseConstruct = new DatabaseConstruct(this, 'Database', {
       stage,
     });
     // Set up SQS
-    const queueConstruct = new QueueStack(this, 'Queue', {stage});
+    const queueConstruct = new QueueConstruct(this, 'Queue', {stage});
     // Create AWS Role to use with function
     const handlerRole = new Role(this, 'SqsHandlerRole', {
       assumedBy: new ServicePrincipal('lambda.amazonaws.com'),

@@ -6,7 +6,7 @@ import {Parameters} from './parameters';
 
 type Props = Parameters;
 
-export class QueueStack extends Construct {
+export class QueueConstruct extends Construct {
   private readonly keyConstruct: KeyConstruct;
   readonly queue: SQSQueue;
 

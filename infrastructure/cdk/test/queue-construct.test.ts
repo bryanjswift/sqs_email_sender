@@ -3,13 +3,15 @@ import {App, Stack} from '@aws-cdk/core';
 import {Alias, Key} from '@aws-cdk/aws-kms';
 import {Queue as SQSQueue} from '@aws-cdk/aws-sqs';
 import test from 'tape';
-import {QueueStack} from '../lib/queue-stack';
+import {QueueConstruct} from '../lib/queue-construct';
 
-test('QueueStack', (t) => {
+test('QueueConstruct', (t) => {
   const app = new App();
   const stack = new Stack(app, 'MyTestStack');
   // WHEN
-  const construct = new QueueStack(stack, 'QueueConstruct', {stage: 'test'});
+  const construct = new QueueConstruct(stack, 'QueueConstruct', {
+    stage: 'test',
+  });
   // THEN
   t.is(
     construct.node.id,

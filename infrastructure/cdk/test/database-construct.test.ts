@@ -7,13 +7,13 @@ import {
   Table as DynamoTable,
 } from '@aws-cdk/aws-dynamodb';
 import test from 'tape';
-import {DatabaseStack} from '../lib/database-stack';
+import {DatabaseConstruct} from '../lib/database-construct';
 
-test('DatabaseStack', (t) => {
+test('DatabaseConstruct', (t) => {
   const app = new App();
   const stack = new Stack(app, 'MyTestStack');
   // WHEN
-  const construct = new DatabaseStack(stack, 'DatabaseConstruct', {
+  const construct = new DatabaseConstruct(stack, 'DatabaseConstruct', {
     stage: 'test',
   });
   // THEN

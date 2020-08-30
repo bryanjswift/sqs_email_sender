@@ -11,7 +11,7 @@ import {Parameters} from './parameters';
 
 type Props = Parameters;
 
-export class DatabaseStack extends Construct {
+export class DatabaseConstruct extends Construct {
   private readonly keyConstruct: KeyConstruct;
   readonly table: DynamoTable;
 
