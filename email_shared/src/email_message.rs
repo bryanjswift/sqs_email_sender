@@ -1,7 +1,7 @@
 /// A `Recipient` represents an address to which a message will be sent.
 type Recipient = String;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EmailStatus {
     Pending,
     Sending,
