@@ -5,7 +5,7 @@ use rusoto_dynamodb::{
 use std::convert::TryFrom;
 
 use crate::attribute_value_wrapper::DynamoItemWrapper;
-use crate::email_message::{EmailMessage, ParseEmailMessageCode};
+use crate::email_message::{EmailMessage, EmailStatus, ParseEmailMessageCode};
 use crate::queue::EmailPointerMessage;
 
 /// Get email data from Dynamo DB and then parse it into an `EmailMessage`. Uses the given
@@ -55,11 +55,10 @@ impl TryFrom<GetItemOutput> for EmailMessage {
     fn try_from(data: GetItemOutput) -> Result<Self, Self::Error> {
         let item = data.item.ok_or(ParseEmailMessageCode::RecordNotFound)?;
         let wrapper = DynamoItemWrapper::new(item);
-        let email_id = extract_email_field(&wrapper, "EmailId")?;
-        let subject = extract_email_field(&wrapper, "Subject")?;
         Ok(EmailMessage {
-            email_id,
-            subject,
+            email_id: extract_email_field(&wrapper, "EmailId")?,
+            subject: extract_email_field(&wrapper, "Subject")?,
+            status: EmailStatus::from(extract_email_field(&wrapper, "Status")?.as_ref()),
             ..EmailMessage::default()
         })
     }
@@ -127,6 +126,76 @@ mod try_from {
                 code,
                 ParseEmailMessageCode::RecordMissingField("Subject".into())
             ),
+        };
+    }
+
+    #[test]
+    fn fails_missing_status() {
+        let mut attrs = HashMap::new();
+        attrs.insert(
+            "EmailId".into(),
+            AttributeValue {
+                s: Some("Test EmailId".into()),
+                ..AttributeValue::default()
+            },
+        );
+        attrs.insert(
+            "Subject".into(),
+            AttributeValue {
+                s: Some("Test Subject".into()),
+                ..AttributeValue::default()
+            },
+        );
+        let item = Some(attrs);
+        let output = GetItemOutput {
+            consumed_capacity: None,
+            item,
+        };
+        match EmailMessage::try_from(output) {
+            Ok(_) => panic!("Should not have parsed."),
+            Err(code) => assert_eq!(
+                code,
+                ParseEmailMessageCode::RecordMissingField("Status".into())
+            ),
+        };
+    }
+
+    #[test]
+    fn succeeds() {
+        let mut attrs = HashMap::new();
+        attrs.insert(
+            "EmailId".into(),
+            AttributeValue {
+                s: Some("Test EmailId".into()),
+                ..AttributeValue::default()
+            },
+        );
+        attrs.insert(
+            "Subject".into(),
+            AttributeValue {
+                s: Some("Test Subject".into()),
+                ..AttributeValue::default()
+            },
+        );
+        attrs.insert(
+            "Status".into(),
+            AttributeValue {
+                s: Some("Pending".into()),
+                ..AttributeValue::default()
+            },
+        );
+        let item = Some(attrs);
+        let output = GetItemOutput {
+            consumed_capacity: None,
+            item,
+        };
+        match EmailMessage::try_from(output) {
+            Ok(email) => {
+                assert_eq!(&email.email_id, "Test EmailId");
+                assert_eq!(&email.subject, "Test Subject");
+                assert_eq!(email.status, EmailStatus::Pending);
+            }
+            Err(_) => panic!("Should have parsed."),
         };
     }
 }
