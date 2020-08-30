@@ -6,11 +6,3 @@ pub mod queue;
 
 pub use client::Client;
 pub use dynamo::get_email_message;
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
