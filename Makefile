@@ -11,13 +11,21 @@ LAMBDA_SRC := $(shell find -E $(LAMBDA) -regex '.*\.rs')
 SHARED=./email_shared
 SHARED_SRC := $(shell find -E $(SHARED) -regex '.*\.rs') 
 
-.PHONY: all broker lambda test
+.PHONY: all broker clean lambda test
 
 all: broker lambda
 
 broker: target/release/email_broker
 
 lambda: target/release/email_lambda
+
+clean:
+	find infrastructure/cdk/bin -name '*.js' -or -name '*.d.ts' \
+		| xargs -t rm
+	find infrastructure/cdk/lib -name '*.js' -or -name '*.d.ts' \
+		| xargs -t rm
+	find infrastructure/cdk/test -name '*.js' -or -name '*.d.ts' \
+		| xargs -t rm
 
 test: $(SHARED_SRC) $(BROKER_SRC) $(LAMBDA_SRC)
 	cargo test
