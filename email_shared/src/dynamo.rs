@@ -4,7 +4,7 @@ use rusoto_dynamodb::{
 };
 use std::convert::TryFrom;
 
-use crate::attribute_value_wrapper::DynamoItemWrapper;
+use crate::attribute_value_wrapper::{AttributeValueMap, DynamoItemWrapper};
 use crate::email_message::{EmailMessage, EmailStatus, ParseEmailMessageCode};
 use crate::queue::EmailPointerMessage;
 
@@ -16,27 +16,16 @@ pub async fn get_email_message(
     table_name: &str,
     message: &EmailPointerMessage,
 ) -> Result<EmailMessage, ParseEmailMessageCode> {
-    let mut input = GetItemInput::from(message);
-    input.table_name = table_name.into();
+    let input = GetItemInput {
+        key: AttributeValueMap::with_entry("EmailId", message.email_id.clone()),
+        table_name: table_name.into(),
+        ..GetItemInput::default()
+    };
     dynamodb
         .get_item(input)
         .await
         .map_err(ParseEmailMessageCode::from)
         .and_then(EmailMessage::try_from)
-}
-
-impl From<&EmailPointerMessage> for GetItemInput {
-    fn from(message: &EmailPointerMessage) -> Self {
-        let email_id_attribute = AttributeValue {
-            s: Some(message.email_id.clone()),
-            ..AttributeValue::default()
-        };
-        let mut input = GetItemInput::default();
-        input
-            .key
-            .insert(String::from("EmailId"), email_id_attribute);
-        input
-    }
 }
 
 fn extract_email_field(
