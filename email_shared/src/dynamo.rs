@@ -1,11 +1,12 @@
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::{
-    AttributeValue, DynamoDb, DynamoDbClient, GetItemError, GetItemInput, GetItemOutput,
+    DynamoDb, DynamoDbClient, GetItemError, GetItemInput, GetItemOutput, UpdateItemInput,
 };
 use std::convert::TryFrom;
 
 use crate::attribute_value_wrapper::{AttributeValueMap, DynamoItemWrapper};
 use crate::email_message::{EmailMessage, EmailStatus, ParseEmailMessageCode};
+use crate::error::UpdateError;
 use crate::queue::EmailPointerMessage;
 
 /// Get email data from Dynamo DB and then parse it into an `EmailMessage`. Uses the given
@@ -26,6 +27,31 @@ pub async fn get_email_message(
         .await
         .map_err(ParseEmailMessageCode::from)
         .and_then(EmailMessage::try_from)
+}
+
+pub async fn set_email_status(
+    dynamodb: &DynamoDbClient,
+    table_name: &str,
+    message: &EmailPointerMessage,
+    current_status: EmailStatus,
+    next_status: EmailStatus,
+) -> Result<(), UpdateError> {
+    let input = UpdateItemInput {
+        condition_expression: Some("Status IN (:expected)".to_owned()),
+        expression_attribute_values: Some(AttributeValueMap::with_entry(
+            ":expected",
+            current_status.to_string(),
+        )),
+        key: AttributeValueMap::with_entry("EmailId", message.email_id.clone()),
+        table_name: table_name.into(),
+        update_expression: Some(format!("SET Status = {}", next_status)),
+        ..UpdateItemInput::default()
+    };
+    dynamodb
+        .update_item(input)
+        .await
+        .map_err(UpdateError::from)
+        .and_then(|_| Ok(()))
 }
 
 fn extract_email_field(
