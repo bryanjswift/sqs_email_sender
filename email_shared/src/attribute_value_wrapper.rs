@@ -1,6 +1,33 @@
 use rusoto_dynamodb::AttributeValue;
 use std::collections::HashMap;
 
+pub struct AttributeValueMap {}
+
+impl AttributeValueMap {
+    /// Create a new `HashMap` of `AttributeValue` structs with one property identified by `key`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use email_shared::attribute_value_wrapper::AttributeValueMap;
+    ///
+    /// let item = AttributeValueMap::with_entry("foo", "bar".into());
+    /// assert!(item.get("foo").unwrap().s == Some("bar".into()));
+    /// assert!(item.get("other_foo") == None);
+    /// ```
+    pub fn with_entry(key: &str, value: String) -> HashMap<String, AttributeValue> {
+        let mut attrs = HashMap::new();
+        attrs.insert(
+            key.into(),
+            AttributeValue {
+                s: Some(value),
+                ..AttributeValue::default()
+            },
+        );
+        attrs
+    }
+}
+
 /// Wrap the `item` representation provided by `rusoto_dynamodb::GetItemOutput` in order to more
 /// conveniently access the properties of an `AttributeValue` hiddent behind an arbitrary `&str`
 /// key.
