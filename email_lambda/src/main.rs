@@ -1,4 +1,5 @@
 mod de;
+mod error;
 
 use de::MessageDef;
 use email_shared::{get_email_message, queue::EmailPointerMessage};
