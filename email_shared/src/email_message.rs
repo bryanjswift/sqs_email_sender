@@ -28,6 +28,12 @@ impl From<&str> for EmailStatus {
     }
 }
 
+impl std::fmt::Display for EmailStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 /// An attachment to an `EmailMessage`.
 #[derive(Clone, Debug, Default)]
 pub struct EmailMessageAttachment {
