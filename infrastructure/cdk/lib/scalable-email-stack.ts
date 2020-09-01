@@ -45,8 +45,8 @@ export class ScalableEmail extends Stack {
       ],
       roleName: `${id}HandlerRole`,
     });
-    databaseConstruct.grantDecrypt(handlerRole);
-    queueConstruct.grantDecrypt(handlerRole);
+    databaseConstruct.grantReadWriteData(handlerRole);
+    queueConstruct.grantConsumeMessages(handlerRole);
     // Set up lambda
     const handlerConstruct = new SqsHandler(this, 'Handler', {
       handlerRole,

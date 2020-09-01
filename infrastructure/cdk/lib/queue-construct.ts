@@ -34,6 +34,10 @@ export class QueueConstruct extends Construct {
     this.keyConstruct = queueKeyConstruct;
   }
 
+  grantConsumeMessages(grantee: IGrantable): Grant {
+    return this.queue.grantConsumeMessages(grantee);
+  }
+
   grantDecrypt(grantee: IGrantable): Grant {
     return this.keyConstruct.grantDecrypt(grantee);
   }
