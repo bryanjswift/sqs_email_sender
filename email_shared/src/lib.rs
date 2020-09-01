@@ -1,12 +1,10 @@
 pub mod attribute_value_wrapper;
-pub mod dynamo;
+mod client;
+mod dynamo;
 pub mod email_message;
+mod error;
 pub mod queue;
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
+pub use client::Client;
+pub use dynamo::{get_email_message, set_email_status};
+pub use error::{GetError, UpdateError};

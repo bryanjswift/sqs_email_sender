@@ -1,7 +1,9 @@
+use thiserror::Error;
+
 /// A `Recipient` represents an address to which a message will be sent.
 type Recipient = String;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EmailStatus {
     Pending,
     Sending,
@@ -23,6 +25,12 @@ impl From<&str> for EmailStatus {
             "Sent" => EmailStatus::Sent,
             _ => EmailStatus::Unknown,
         }
+    }
+}
+
+impl std::fmt::Display for EmailStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
@@ -77,26 +85,23 @@ pub struct EmailMessage {
 }
 
 /// Possible errors while attempting to pull fields out of `GetItemOutput`.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Error, PartialEq)]
 pub enum ParseEmailMessageCode {
     /// The specified record did not exist.
+    #[error("The specified record did not exist.")]
     RecordNotFound,
     /// The record was missing a field.
+    #[error("The record was missing the `{0}` attribute.")]
     RecordMissingField(String),
     /// The service could not be reached to retrieve a record. This indicates an underlying
     /// problem, check the logs.
+    #[error("An error occurred attempting to access the record.")]
     RecordUnreachable,
 }
 
 impl From<ParseEmailMessageCode> for String {
     fn from(code: ParseEmailMessageCode) -> String {
         format!("{}", code)
-    }
-}
-
-impl std::fmt::Display for ParseEmailMessageCode {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        std::fmt::Debug::fmt(self, f)
     }
 }
 
@@ -107,6 +112,6 @@ mod from {
     #[test]
     fn changes_code_to_string() {
         let output = String::from(ParseEmailMessageCode::RecordUnreachable);
-        assert_eq!(output, "RecordUnreachable");
+        assert_eq!(output, "An error occurred attempting to access the record.");
     }
 }

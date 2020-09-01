@@ -10,6 +10,8 @@ export const STAGES = ['Local', 'Test', 'Staging', 'Production'];
 const app = new App();
 export const stacks = STAGES.reduce<StackMap>((map, stage) => {
   const stack = new ScalableEmail(app, `ScalableEmail${stage}`, {
+    description:
+      'Stack to enable ansynchronous processing of a large volume of email. Email information is stored in DynamoDB and the send trigger is pushed into SQS.',
     stage: stage.toLowerCase(),
   });
   map[stage] = stack;

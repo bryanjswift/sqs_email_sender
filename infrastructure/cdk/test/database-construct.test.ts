@@ -7,13 +7,13 @@ import {
   Table as DynamoTable,
 } from '@aws-cdk/aws-dynamodb';
 import test from 'tape';
-import {DatabaseStack} from '../lib/database-stack';
+import {DatabaseConstruct} from '../lib/database-construct';
 
-test('DatabaseStack', (t) => {
+test('DatabaseConstruct', (t) => {
   const app = new App();
   const stack = new Stack(app, 'MyTestStack');
   // WHEN
-  const construct = new DatabaseStack(stack, 'DatabaseConstruct', {
+  const construct = new DatabaseConstruct(stack, 'DatabaseConstruct', {
     stage: 'test',
   });
   // THEN
@@ -78,11 +78,7 @@ test('DatabaseStack', (t) => {
     );
   }
   // It has a queue url output
-  t.ok(construct.tableName, 'There is an output for Dynamo Table name');
-  t.is(
-    construct.tableName.node.id,
-    'DatabaseTable',
-    'At least according to its name'
-  );
+  t.ok(construct.table, 'There is a property for the dynamo table');
+  t.is(construct.table.node.id, 'Messages', 'At least according to its name');
   t.end();
 });

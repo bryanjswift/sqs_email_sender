@@ -1,7 +1,9 @@
 /email_broker/target
+/email_lambda/target
 /email_shared/target
 /target
 **/*.rs.bk
+/email_lambda.zip
 
 # Yarn - Not Zero Install
 # https://yarnpkg.com/advanced/qa#which-files-should-be-gitignored
