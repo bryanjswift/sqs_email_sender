@@ -8,6 +8,7 @@ use de::MessageDef;
 use email_shared::email_message::EmailStatus;
 use email_shared::queue::EmailPointerMessage;
 use email_shared::{get_email_message, set_email_status, UpdateError};
+use error::EmailHandlerError;
 use lambda_runtime::error::HandlerError;
 use lambda_runtime::{lambda, Context};
 use log::{error, info, warn};
@@ -107,7 +108,8 @@ async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerErr
         entries_to_delete.push(DeleteMessageBatchRequestEntry::from(&pointer));
     }
     // Read the queue url from config
-    if record_count == entries_to_delete.len() {
+    let entries_to_delete_count = entries_to_delete.len();
+    if record_count == entries_to_delete_count {
         info!(
             "All events processed successfully. Lambda will delete {:?}",
             &entries_to_delete
@@ -121,16 +123,18 @@ async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerErr
             "Some entries failed to process, {:?} succeeded",
             &entries_to_delete
         );
-        let _delete_response = &SQS
+        let delete_response = &SQS
             .delete_message_batch(DeleteMessageBatchRequest {
                 entries: entries_to_delete,
                 queue_url,
             })
             .await;
-        // Err(HandlerError::new(EmailHandlerError::default()))
-        Ok(CustomOutput {
-            message: format!("Failure feels bad"),
-        })
+        let error = match delete_response {
+            Ok(_) if entries_to_delete_count > 0 => EmailHandlerError::PartialBatchFailure,
+            Ok(_) => EmailHandlerError::BatchFailure,
+            Err(_) => EmailHandlerError::SqsDeleteFailed,
+        };
+        Err(HandlerError::new(error))
     }
 }
 

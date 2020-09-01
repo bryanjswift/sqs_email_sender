@@ -1,17 +1,25 @@
-use email_shared::email_message::ParseEmailMessageCode;
+use email_shared::GetError;
 use lambda_runtime::error::{HandlerError, LambdaErrorExt};
 
-#[derive(Clone, Debug, Default)]
-pub struct EmailHandlerError {
-    err_type: Option<String>,
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum EmailHandlerError {
+    BatchFailure,
+    PartialBatchFailure,
+    SqsDeleteFailed,
+}
+
+impl Default for EmailHandlerError {
+    fn default() -> Self {
+        EmailHandlerError::BatchFailure
+    }
 }
 
 impl LambdaErrorExt for EmailHandlerError {
     fn error_type(&self) -> &str {
-        if let Some(error_type) = &self.err_type {
-            error_type
-        } else {
-            "EmailHandlerError"
+        match self {
+            Self::BatchFailure => "BatchFailure",
+            Self::PartialBatchFailure => "PartialBatchFailure",
+            Self::SqsDeleteFailed => "SqsDeleteFailed",
         }
     }
 }
@@ -24,11 +32,9 @@ impl std::fmt::Display for EmailHandlerError {
 
 impl std::error::Error for EmailHandlerError {}
 
-impl From<ParseEmailMessageCode> for EmailHandlerError {
-    fn from(value: ParseEmailMessageCode) -> Self {
-        EmailHandlerError {
-            err_type: Some(format!("{}", value)),
-        }
+impl From<GetError> for EmailHandlerError {
+    fn from(_value: GetError) -> Self {
+        EmailHandlerError::PartialBatchFailure
     }
 }
 

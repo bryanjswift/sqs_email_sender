@@ -7,4 +7,4 @@ pub mod queue;
 
 pub use client::Client;
 pub use dynamo::{get_email_message, set_email_status};
-pub use error::UpdateError;
+pub use error::{GetError, UpdateError};

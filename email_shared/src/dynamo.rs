@@ -1,22 +1,19 @@
-use rusoto_core::RusotoError;
-use rusoto_dynamodb::{
-    DynamoDb, DynamoDbClient, GetItemError, GetItemInput, GetItemOutput, UpdateItemInput,
-};
+use rusoto_dynamodb::{DynamoDb, DynamoDbClient, GetItemInput, GetItemOutput, UpdateItemInput};
 use std::convert::TryFrom;
 
 use crate::attribute_value_wrapper::{AttributeValueMap, DynamoItemWrapper};
-use crate::email_message::{EmailMessage, EmailStatus, ParseEmailMessageCode};
-use crate::error::UpdateError;
+use crate::email_message::{EmailMessage, EmailStatus};
+use crate::error::{GetError, UpdateError};
 use crate::queue::EmailPointerMessage;
 
 /// Get email data from Dynamo DB and then parse it into an `EmailMessage`. Uses the given
 /// `DynamoDbClient` and attempts to get the item from the given `table_name`. Errors from they
-/// Dynamo DB service are converted into `ParseEmailMessageCode`.
+/// Dynamo DB service are converted into `GetError`.
 pub async fn get_email_message(
     dynamodb: &DynamoDbClient,
     table_name: &str,
     message: &EmailPointerMessage,
-) -> Result<EmailMessage, ParseEmailMessageCode> {
+) -> Result<EmailMessage, GetError> {
     let input = GetItemInput {
         key: AttributeValueMap::with_entry("EmailId", message.email_id.clone()),
         table_name: table_name.into(),
@@ -25,7 +22,7 @@ pub async fn get_email_message(
     dynamodb
         .get_item(input)
         .await
-        .map_err(ParseEmailMessageCode::from)
+        .map_err(GetError::from)
         .and_then(EmailMessage::try_from)
 }
 
@@ -54,21 +51,15 @@ pub async fn set_email_status(
         .and_then(|_| Ok(()))
 }
 
-fn extract_email_field(
-    wrapper: &DynamoItemWrapper,
-    field: &str,
-) -> Result<String, ParseEmailMessageCode> {
-    wrapper.s(
-        field,
-        ParseEmailMessageCode::RecordMissingField(field.into()),
-    )
+fn extract_email_field(wrapper: &DynamoItemWrapper, field: &str) -> Result<String, GetError> {
+    wrapper.s(field, GetError::PropertyMissing(field.into()))
 }
 
 impl TryFrom<GetItemOutput> for EmailMessage {
-    type Error = ParseEmailMessageCode;
+    type Error = GetError;
 
     fn try_from(data: GetItemOutput) -> Result<Self, Self::Error> {
-        let item = data.item.ok_or(ParseEmailMessageCode::RecordNotFound)?;
+        let item = data.item.ok_or(GetError::RecordNotFound)?;
         let wrapper = DynamoItemWrapper::new(item);
         Ok(EmailMessage {
             email_id: extract_email_field(&wrapper, "EmailId")?,
@@ -76,12 +67,6 @@ impl TryFrom<GetItemOutput> for EmailMessage {
             status: EmailStatus::from(extract_email_field(&wrapper, "Status")?.as_ref()),
             ..EmailMessage::default()
         })
-    }
-}
-
-impl From<RusotoError<GetItemError>> for ParseEmailMessageCode {
-    fn from(_error: RusotoError<GetItemError>) -> ParseEmailMessageCode {
-        ParseEmailMessageCode::RecordUnreachable
     }
 }
 
@@ -99,7 +84,7 @@ mod try_from {
         };
         match EmailMessage::try_from(output) {
             Ok(_) => panic!("Should not have parsed."),
-            Err(code) => assert_eq!(code, ParseEmailMessageCode::RecordNotFound),
+            Err(code) => assert_eq!(code, GetError::RecordNotFound),
         };
     }
 
@@ -113,10 +98,7 @@ mod try_from {
         };
         match EmailMessage::try_from(output) {
             Ok(_) => panic!("Should not have parsed."),
-            Err(code) => assert_eq!(
-                code,
-                ParseEmailMessageCode::RecordMissingField("EmailId".into())
-            ),
+            Err(code) => assert_eq!(code, GetError::PropertyMissing("EmailId".into())),
         };
     }
 
@@ -137,10 +119,7 @@ mod try_from {
         };
         match EmailMessage::try_from(output) {
             Ok(_) => panic!("Should not have parsed."),
-            Err(code) => assert_eq!(
-                code,
-                ParseEmailMessageCode::RecordMissingField("Subject".into())
-            ),
+            Err(code) => assert_eq!(code, GetError::PropertyMissing("Subject".into())),
         };
     }
 
@@ -168,10 +147,7 @@ mod try_from {
         };
         match EmailMessage::try_from(output) {
             Ok(_) => panic!("Should not have parsed."),
-            Err(code) => assert_eq!(
-                code,
-                ParseEmailMessageCode::RecordMissingField("Status".into())
-            ),
+            Err(code) => assert_eq!(code, GetError::PropertyMissing("Status".into())),
         };
     }
 
