@@ -34,14 +34,14 @@ pub async fn set_email_status(
     next_status: EmailStatus,
 ) -> Result<(), UpdateError> {
     let input = UpdateItemInput {
-        condition_expression: Some("Status IN (:expected)".to_owned()),
+        condition_expression: Some("EmailStatus IN (:expected)".to_owned()),
         expression_attribute_values: Some(AttributeValueMap::with_entry(
             ":expected",
             current_status.to_string(),
         )),
         key: AttributeValueMap::with_entry("EmailId", message.email_id.clone()),
         table_name: table_name.into(),
-        update_expression: Some(format!("SET Status = {}", next_status)),
+        update_expression: Some(format!("SET EmailStatus = {}", next_status)),
         ..UpdateItemInput::default()
     };
     dynamodb
@@ -64,7 +64,7 @@ impl TryFrom<GetItemOutput> for EmailMessage {
         Ok(EmailMessage {
             email_id: extract_email_field(&wrapper, "EmailId")?,
             subject: extract_email_field(&wrapper, "Subject")?,
-            status: EmailStatus::from(extract_email_field(&wrapper, "Status")?.as_ref()),
+            status: EmailStatus::from(extract_email_field(&wrapper, "EmailStatus")?.as_ref()),
             ..EmailMessage::default()
         })
     }
@@ -147,7 +147,7 @@ mod try_from {
         };
         match EmailMessage::try_from(output) {
             Ok(_) => panic!("Should not have parsed."),
-            Err(code) => assert_eq!(code, GetError::PropertyMissing("Status".into())),
+            Err(code) => assert_eq!(code, GetError::PropertyMissing("EmailStatus".into())),
         };
     }
 
@@ -169,7 +169,7 @@ mod try_from {
             },
         );
         attrs.insert(
-            "Status".into(),
+            "EmailStatus".into(),
             AttributeValue {
                 s: Some("Pending".into()),
                 ..AttributeValue::default()
