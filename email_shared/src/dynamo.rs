@@ -34,14 +34,14 @@ pub async fn set_email_status(
     next_status: EmailStatus,
 ) -> Result<(), UpdateError> {
     let input = UpdateItemInput {
-        condition_expression: Some("EmailStatus IN (:expected)".to_owned()),
-        expression_attribute_values: Some(AttributeValueMap::with_entry(
-            ":expected",
-            current_status.to_string(),
-        )),
+        condition_expression: Some("EmailStatus = :expected".to_owned()),
+        expression_attribute_values: Some(AttributeValueMap::with_entries(vec![
+            (":expected".into(), current_status.to_string()),
+            (":next".into(), next_status.to_string()),
+        ])),
         key: AttributeValueMap::with_entry("EmailId", message.email_id.clone()),
         table_name: table_name.into(),
-        update_expression: Some(format!("SET EmailStatus = {}", next_status)),
+        update_expression: Some("SET EmailStatus = :next".to_owned()),
         ..UpdateItemInput::default()
     };
     dynamodb
