@@ -3,6 +3,8 @@ use std::collections::HashMap;
 
 pub struct AttributeValueMap {}
 
+type AttributeValueStringEntry = (String, String);
+
 impl AttributeValueMap {
     /// Create a new `HashMap` of `AttributeValue` structs with one property identified by `key`.
     ///
@@ -24,6 +26,39 @@ impl AttributeValueMap {
                 ..AttributeValue::default()
             },
         );
+        attrs
+    }
+
+    /// Create a new `HashMap` of `AttributeValue` structs with string properties for each tuple of
+    /// key, value pairs.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use email_shared::attribute_value_wrapper::AttributeValueMap;
+    ///
+    /// let item = AttributeValueMap::with_entries(vec![
+    ///     (":expected".into(), "bar".into()),
+    ///     (":next".into(), "Test Next".into()),
+    /// ]);
+    /// assert!(item.get(":expected").unwrap().s == Some("bar".into()));
+    /// assert!(item.get(":next").unwrap().s == Some("Test Next".into()));
+    /// assert!(item.get("other_foo") == None);
+    /// ```
+    pub fn with_entries<I>(entries: I) -> HashMap<String, AttributeValue>
+    where
+        I: IntoIterator<Item = AttributeValueStringEntry>,
+    {
+        let mut attrs = HashMap::new();
+        for (key, value) in entries {
+            attrs.insert(
+                key,
+                AttributeValue {
+                    s: Some(value),
+                    ..AttributeValue::default()
+                },
+            );
+        }
         attrs
     }
 }
