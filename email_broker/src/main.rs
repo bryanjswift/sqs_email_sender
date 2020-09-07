@@ -1,13 +1,12 @@
 mod config;
 
-use log::{error, info};
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::DynamoDbClient;
 use rusoto_sqs::{
     DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry, Message, ReceiveMessageError,
     ReceiveMessageRequest, Sqs, SqsClient,
 };
-use simplelog::{Config as LogConfig, LevelFilter, TermLogger, TerminalMode};
+use slog::{error, info, slog_o, Drain};
 use structopt::StructOpt;
 
 use config::Options;
@@ -15,9 +14,18 @@ use email_shared::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    TermLogger::init(LevelFilter::Info, LogConfig::default(), TerminalMode::Mixed).unwrap();
+    // Setup Logger
+    let decorator = slog_term::TermDecorator::new().stdout().build();
+    let drain = slog_term::FullFormat::new(decorator).build().fuse();
+    let drain = slog_async::Async::new(drain).build().fuse();
+    let logger = slog::Logger::root(drain, slog_o!("version" => env!("CARGO_PKG_VERSION")));
+    // Start
     let opt = Options::from_args();
-    info!("{:?}", opt);
+    info!(logger, "broker init";
+        "queue_url" => &opt.queue_url,
+        "region" => &opt.region.name(),
+        "table_name" => &opt.table_name,
+    );
     let sqs = SqsClient::new(opt.region.clone());
     let dynamodb = DynamoDbClient::new(opt.region.clone());
     let client = Client::new(&dynamodb, &opt.table_name);
@@ -27,7 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let processed_messages = match message_list {
             Ok(messages) => client.process_messages(messages).await,
             Err(error) => {
-                error!("get_sqs_email_messages: {}", error);
+                error!(logger, "ReceiveMessageError"; "error" => format!("{}", error));
                 Vec::new()
             }
         };
@@ -39,7 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             entries: entries_to_delete,
             queue_url: queue_url.into(),
         };
-        info!("{:?}", delete_messages_request);
+        info!(logger, "delete messages"; "count" => delete_messages_request.entries.len());
         if opt.dry_run {
             break;
         }

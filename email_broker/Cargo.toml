@@ -8,12 +8,13 @@ edition = "2018"
 
 [dependencies]
 email_shared = { version = "0.1.0", path = "../email_shared" }
-log = "0.4.11"
 rusoto_core = "0.45.0"
 rusoto_dynamodb = "0.45.0"
 rusoto_sqs = "0.45.0"
 serde = "1.0.115"
 serde_json = "1.0.57"
-simplelog = "0.8.0"
+slog = "2.5.2"
+slog-async = "2.5.0"
+slog-term = "2.6.0"
 structopt = "0.3.16"
 tokio = { version = "0.2.22", features = ["macros", "rt-core"] }

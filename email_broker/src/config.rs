@@ -3,6 +3,8 @@ use structopt::StructOpt;
 
 const LOCALSTACK_REGION: &str = "localstack";
 
+/// Create a custom `Region` if the given name is "localstack" otherwise determine `Region` from
+/// the given string.
 fn parse_region(s: &str) -> Region {
     if s == LOCALSTACK_REGION {
         Region::Custom {
@@ -10,7 +12,7 @@ fn parse_region(s: &str) -> Region {
             endpoint: "localhost".into(),
         }
     } else {
-        Region::default()
+        s.parse().unwrap_or(Region::default())
     }
 }
 
