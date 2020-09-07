@@ -46,7 +46,11 @@ fn main() {
 }
 
 #[tokio::main]
-async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerError> {
+async fn handler(event: SqsEvent, context: Context) -> Result<CustomOutput, HandlerError> {
+    let logger = LOGGER.new(slog_o!(
+        "RequestId" => context.aws_request_id,
+        "Version" => context.function_version,
+    ));
     // Start
     let mut entries_to_delete = Vec::new();
     // Read dynamo db table name from config or environment
@@ -55,7 +59,7 @@ async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerErr
     let queue_url = env::var(QUEUE_URL)?;
     // Get the number of records received
     let record_count = event.records.len();
-    // l
+    // Process each event record
     for record in event.records.into_iter() {
         // Which errors mean try again and which errors mean skip message?
         // 1. Parse email_id from SQS message
@@ -64,14 +68,15 @@ async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerErr
         let pointer = match pointer {
             Ok(record) => record,
             Err(msg) => {
-                error!(LOGGER, "pointer parse failure"; "msg" => msg);
+                error!(logger, "pointer parse failure"; "msg" => msg);
                 continue;
             }
         };
+        // Create logger for this record
+        let record_logger = logger.new(slog_o!("email_id" => pointer.email_id.clone()));
         // 2. Get email data from dynamo db table
         // 3. Parse dynamo data into object for sending
-        info!(LOGGER, "get email";
-            "email_id" => &pointer.email_id,
+        info!(record_logger, "get email";
             "table_name" => &table_name
         );
         let email = get_email_message(&DYNAMODB, &table_name, &pointer).await;
@@ -79,8 +84,7 @@ async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerErr
         //    message to remove will automatically be created.
         let email = match email {
             Ok(mail) if mail.status != EmailStatus::Pending => {
-                warn!(LOGGER, "email not pending";
-                    "email_id" => &mail.email_id,
+                warn!(record_logger, "email not pending";
                     "email_status" => &mail.status.to_string(),
                 );
                 // See 7.
@@ -90,10 +94,7 @@ async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerErr
             }
             Ok(mail) => mail,
             Err(error) => {
-                error!(LOGGER, "get email failed";
-                    "email_id" => &pointer.email_id,
-                    "error" => error.to_string()
-                );
+                error!(record_logger, "get email failed"; "error" => error.to_string());
                 continue;
             }
         };
@@ -101,23 +102,16 @@ async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerErr
         //    not try to send the same email
         let update_result = upate_to_sending(&table_name, &pointer).await;
         if let Err(error) = update_result {
-            error!(LOGGER, "update email failed";
-                "email_id" => &pointer.email_id,
-                "error" => error.to_string()
-            );
+            error!(record_logger, "update email failed"; "error" => error.to_string());
             continue;
         }
         // 6. TODO: Send the message
-        info!(LOGGER, "start email transmit";
-            "email_id" => &pointer.email_id,
+        info!(record_logger, "start email transmit";
             "email_status" => &email.status.to_string()
         );
         let update_result = upate_to_sent(&table_name, &pointer).await;
         if let Err(error) = update_result {
-            error!(LOGGER, "update email failed";
-                "email_id" => &pointer.email_id,
-                "error" => error.to_string()
-            );
+            error!(record_logger, "update email failed"; "error" => error.to_string());
             continue;
         }
         // 7. Messages are automatically removed from the queue if lambda succeeds. In case of
@@ -129,7 +123,7 @@ async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerErr
     // Read the queue url from config
     let entries_to_delete_count = entries_to_delete.len();
     if record_count == entries_to_delete_count {
-        info!(LOGGER, "success";
+        info!(logger, "success";
             "entries_to_delete" => format!("{:?}", &entries_to_delete),
         );
         Ok(CustomOutput {
@@ -137,7 +131,7 @@ async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerErr
         })
     } else {
         // Delete "processed" messages from SQS
-        info!(LOGGER, "partial failure";
+        info!(logger, "partial failure";
             "entries_to_delete" => format!("{:?}", &entries_to_delete),
         );
         let delete_response = &SQS
@@ -199,5 +193,5 @@ fn get_root_logger() -> slog::Logger {
         .build()
         .fuse();
     let drain = slog_async::Async::new(drain).build().fuse();
-    slog::Logger::root(drain, slog_o!("version" => env!("CARGO_PKG_VERSION")))
+    slog::Logger::root(drain, slog_o!())
 }
