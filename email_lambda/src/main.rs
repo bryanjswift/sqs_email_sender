@@ -101,6 +101,11 @@ async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerErr
         }
         // 6. TODO: Send the message
         info!("Email is {}, transmitting", email.status,);
+        let update_result = upate_to_sent(&table_name, &pointer).await;
+        if let Err(error) = update_result {
+            error!("{}", error);
+            continue;
+        }
         // 7. Messages are automatically removed from the queue if lambda succeeds. In case of
         //    failure keep track of the successfully processed messages so in the event of partial
         //    (or total) batch failure the successful messages can be deleted but the errored
@@ -148,6 +153,17 @@ async fn upate_to_sending(
         &pointer,
         EmailStatus::Pending,
         EmailStatus::Sending,
+    )
+    .await
+}
+
+async fn upate_to_sent(table_name: &str, pointer: &EmailPointerMessage) -> Result<(), UpdateError> {
+    set_email_status(
+        &DYNAMODB,
+        &table_name,
+        &pointer,
+        EmailStatus::Sending,
+        EmailStatus::Sent,
     )
     .await
 }
