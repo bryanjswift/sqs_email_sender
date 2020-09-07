@@ -11,14 +11,13 @@ use email_shared::{get_email_message, set_email_status, UpdateError};
 use error::EmailHandlerError;
 use lambda_runtime::error::HandlerError;
 use lambda_runtime::{lambda, Context};
-use log::{error, info, warn};
 use rusoto_core::Region;
 use rusoto_dynamodb::DynamoDbClient;
 use rusoto_sqs::{
     DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry, Message, Sqs, SqsClient,
 };
 use serde::{Deserialize, Serialize};
-use simplelog::{Config as LogConfig, LevelFilter, SimpleLogger};
+use slog::{error, info, slog_o, warn, Drain};
 use std::convert::TryFrom;
 use std::env;
 
@@ -26,6 +25,7 @@ const DYNAMO_TABLE: &str = "DYNAMO_TABLE";
 const QUEUE_URL: &str = "QUEUE_URL";
 
 lazy_static! {
+    static ref LOGGER: slog::Logger = get_root_logger();
     static ref DYNAMODB: DynamoDbClient = DynamoDbClient::new(Region::UsEast1);
     static ref SQS: SqsClient = SqsClient::new(Region::UsEast1);
 }
@@ -42,12 +42,12 @@ struct CustomOutput {
 }
 
 fn main() {
-    SimpleLogger::init(LevelFilter::Info, LogConfig::default()).unwrap();
     lambda!(handler);
 }
 
 #[tokio::main]
 async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerError> {
+    // Start
     let mut entries_to_delete = Vec::new();
     // Read dynamo db table name from config or environment
     let table_name = env::var(DYNAMO_TABLE)?;
@@ -64,22 +64,24 @@ async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerErr
         let pointer = match pointer {
             Ok(record) => record,
             Err(msg) => {
-                error!("Failed to parse email pointer: {}", msg);
+                error!(LOGGER, "pointer parse failure"; "msg" => msg);
                 continue;
             }
         };
         // 2. Get email data from dynamo db table
         // 3. Parse dynamo data into object for sending
-        info!("Looking for {:?} in {:?}", &pointer.email_id, &table_name);
+        info!(LOGGER, "get email";
+            "email_id" => &pointer.email_id,
+            "table_name" => &table_name
+        );
         let email = get_email_message(&DYNAMODB, &table_name, &pointer).await;
         // 4. If status of email is not `EmailStatus::Pending` log a warning and skip sending. The
         //    message to remove will automatically be created.
         let email = match email {
             Ok(mail) if mail.status != EmailStatus::Pending => {
-                warn!(
-                    "{} is not {}, skipping",
-                    mail.email_id,
-                    EmailStatus::Pending
+                warn!(LOGGER, "email not pending";
+                    "email_id" => &mail.email_id,
+                    "email_status" => &mail.status.to_string(),
                 );
                 // See 7.
                 // Skipping doesn't work unless the pointer is recorded as an entry to be deleted.
@@ -88,7 +90,10 @@ async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerErr
             }
             Ok(mail) => mail,
             Err(error) => {
-                error!("{}", error);
+                error!(LOGGER, "get email failed";
+                    "email_id" => &pointer.email_id,
+                    "error" => error.to_string()
+                );
                 continue;
             }
         };
@@ -96,14 +101,23 @@ async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerErr
         //    not try to send the same email
         let update_result = upate_to_sending(&table_name, &pointer).await;
         if let Err(error) = update_result {
-            error!("{}", error);
+            error!(LOGGER, "update email failed";
+                "email_id" => &pointer.email_id,
+                "error" => error.to_string()
+            );
             continue;
         }
         // 6. TODO: Send the message
-        info!("Email is {}, transmitting", email.status,);
+        info!(LOGGER, "start email transmit";
+            "email_id" => &pointer.email_id,
+            "email_status" => &email.status.to_string()
+        );
         let update_result = upate_to_sent(&table_name, &pointer).await;
         if let Err(error) = update_result {
-            error!("{}", error);
+            error!(LOGGER, "update email failed";
+                "email_id" => &pointer.email_id,
+                "error" => error.to_string()
+            );
             continue;
         }
         // 7. Messages are automatically removed from the queue if lambda succeeds. In case of
@@ -115,18 +129,16 @@ async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerErr
     // Read the queue url from config
     let entries_to_delete_count = entries_to_delete.len();
     if record_count == entries_to_delete_count {
-        info!(
-            "All events processed successfully. Lambda will delete {:?}",
-            &entries_to_delete
+        info!(LOGGER, "success";
+            "entries_to_delete" => format!("{:?}", &entries_to_delete),
         );
         Ok(CustomOutput {
             message: format!("Goodbye {:?}", &entries_to_delete),
         })
     } else {
         // Delete "processed" messages from SQS
-        info!(
-            "Some entries failed to process, {:?} succeeded",
-            &entries_to_delete
+        info!(LOGGER, "partial failure";
+            "entries_to_delete" => format!("{:?}", &entries_to_delete),
         );
         let delete_response = &SQS
             .delete_message_batch(DeleteMessageBatchRequest {
@@ -143,6 +155,8 @@ async fn handler(event: SqsEvent, _: Context) -> Result<CustomOutput, HandlerErr
     }
 }
 
+/// Update the `EmailStatus` of the Dynamo record identified by `pointer` to `EmailStatus::Sending` as
+/// long as it is currently in the `EmailStatus::Pending` status.
 async fn upate_to_sending(
     table_name: &str,
     pointer: &EmailPointerMessage,
@@ -157,6 +171,8 @@ async fn upate_to_sending(
     .await
 }
 
+/// Update the `EmailStatus` of the Dynamo record identified by `pointer` to `EmailStatus::Sent` as
+/// long as it is currently in the `EmailStatus::Sending` status.
 async fn upate_to_sent(table_name: &str, pointer: &EmailPointerMessage) -> Result<(), UpdateError> {
     set_email_status(
         &DYNAMODB,
@@ -166,4 +182,13 @@ async fn upate_to_sent(table_name: &str, pointer: &EmailPointerMessage) -> Resul
         EmailStatus::Sent,
     )
     .await
+}
+
+/// Create the "root" `slog::Logger` to use.
+fn get_root_logger() -> slog::Logger {
+    // Setup Logger
+    let decorator = slog_term::PlainDecorator::new(std::io::stdout());
+    let drain = slog_term::FullFormat::new(decorator).build().fuse();
+    let drain = slog_async::Async::new(drain).build().fuse();
+    slog::Logger::root(drain, slog_o!("version" => env!("CARGO_PKG_VERSION")))
 }
