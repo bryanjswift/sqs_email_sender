@@ -184,11 +184,20 @@ async fn upate_to_sent(table_name: &str, pointer: &EmailPointerMessage) -> Resul
     .await
 }
 
+/// Lambda writes timestamps to CloudWatch logs already, so do not write anything when asked for a
+/// timestamp.
+fn noop_timestamp(_: &mut dyn std::io::Write) -> std::io::Result<()> {
+    Ok(())
+}
+
 /// Create the "root" `slog::Logger` to use.
 fn get_root_logger() -> slog::Logger {
     // Setup Logger
     let decorator = slog_term::PlainDecorator::new(std::io::stdout());
-    let drain = slog_term::FullFormat::new(decorator).build().fuse();
+    let drain = slog_term::FullFormat::new(decorator)
+        .use_custom_timestamp(noop_timestamp)
+        .build()
+        .fuse();
     let drain = slog_async::Async::new(drain).build().fuse();
     slog::Logger::root(drain, slog_o!("version" => env!("CARGO_PKG_VERSION")))
 }
