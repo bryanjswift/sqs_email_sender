@@ -35,7 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let processed_messages = match message_list {
             Ok(messages) => client.process_messages(messages).await,
             Err(error) => {
-                error!(logger, "ReceiveMessageError"; "error" => format!("{}", error));
+                error!(logger, "ReceiveMessageError"; "error" => %error);
                 Vec::new()
             }
         };

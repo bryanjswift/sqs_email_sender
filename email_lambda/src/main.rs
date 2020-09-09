@@ -125,7 +125,7 @@ async fn handler(event: SqsEvent, context: Context) -> Result<CustomOutput, Hand
     let entries_to_delete_count = entries_to_delete.len();
     if record_count == entries_to_delete_count {
         info!(logger, "success";
-            "entries_to_delete" => format!("{:?}", &entries_to_delete),
+            "entries_to_delete" => ?&entries_to_delete,
         );
         Ok(CustomOutput {
             message: format!("Goodbye {:?}", &entries_to_delete),
@@ -133,7 +133,7 @@ async fn handler(event: SqsEvent, context: Context) -> Result<CustomOutput, Hand
     } else {
         // Delete "processed" messages from SQS
         info!(logger, "partial failure";
-            "entries_to_delete" => format!("{:?}", &entries_to_delete),
+            "entries_to_delete" => ?&entries_to_delete,
         );
         let delete_response = &SQS
             .delete_message_batch(DeleteMessageBatchRequest {
