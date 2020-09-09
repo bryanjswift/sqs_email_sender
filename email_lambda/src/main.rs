@@ -87,7 +87,7 @@ async fn handler(event: SqsEvent, context: Context) -> Result<CustomOutput, Hand
                 warn!(record_logger, "email not pending";
                     "email_status" => &mail.status.to_string(),
                 );
-                // See 7.
+                // See 8.
                 // Skipping doesn't work unless the pointer is recorded as an entry to be deleted.
                 entries_to_delete.push(DeleteMessageBatchRequestEntry::from(&pointer));
                 continue;
@@ -109,15 +109,16 @@ async fn handler(event: SqsEvent, context: Context) -> Result<CustomOutput, Hand
         info!(record_logger, "start email transmit";
             "email_status" => &email.status.to_string()
         );
+        // 7. Update the message status in dynamo to sent
         let update_result = upate_to_sent(&table_name, &pointer).await;
         if let Err(error) = update_result {
             error!(record_logger, "update email failed"; "error" => error.to_string());
             continue;
         }
-        // 7. Messages are automatically removed from the queue if lambda succeeds. In case of
-        //    failure keep track of the successfully processed messages so in the event of partial
-        //    (or total) batch failure the successful messages can be deleted but the errored
-        //    messages will get redelivered.
+        // 8. Messages are automatically removed from the queue if lambda succeeds. Keep track of
+        //    the successfully processed messages so in the event of partial (or total) batch
+        //    failure the successful messages can be deleted but the errored messages will get
+        //    redelivered.
         entries_to_delete.push(DeleteMessageBatchRequestEntry::from(&pointer));
     }
     // Read the queue url from config
