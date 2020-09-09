@@ -1,3 +1,4 @@
+.DS_Store
 /email_broker/target
 /email_lambda/target
 /email_shared/target
