@@ -53,7 +53,7 @@ fn main() {
 async fn handler(event: SqsEvent, context: Context) -> Result<CustomOutput, HandlerError> {
     let handler_span = span!(
         Level::INFO,
-        "email_lambda#handler",
+        env!("CARGO_PKG_NAME"),
         RequestId = %context.aws_request_id,
         Version = %context.function_version,
     );
