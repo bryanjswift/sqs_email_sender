@@ -53,7 +53,7 @@ fn main() {
 async fn handler(event: SqsEvent, context: Context) -> Result<CustomOutput, HandlerError> {
     let handler_span = span!(
         Level::INFO,
-        "email_lambda#handler",
+        env!("CARGO_PKG_NAME"),
         RequestId = %context.aws_request_id,
         Version = %context.function_version,
     );
@@ -75,7 +75,7 @@ async fn handler(event: SqsEvent, context: Context) -> Result<CustomOutput, Hand
         let pointer = match pointer {
             Ok(record) => record,
             Err(msg) => {
-                event!(Level::ERROR, msg, "pointer parse failure");
+                event!(Level::ERROR, error = msg, "pointer parse failure");
                 continue;
             }
         };

@@ -21,7 +21,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _subscriber_guard = tracing::subscriber::set_global_default(subscriber);
     let main_span = span!(
         Level::INFO,
-        "email_broker",
+        env!("CARGO_PKG_NAME"),
         Version = env!("CARGO_PKG_VERSION"),
     );
     let _main_guard = main_span.enter();
