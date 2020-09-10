@@ -75,7 +75,7 @@ async fn handler(event: SqsEvent, context: Context) -> Result<CustomOutput, Hand
         let pointer = match pointer {
             Ok(record) => record,
             Err(msg) => {
-                event!(Level::ERROR, msg, "pointer parse failure");
+                event!(Level::ERROR, error = msg, "pointer parse failure");
                 continue;
             }
         };
