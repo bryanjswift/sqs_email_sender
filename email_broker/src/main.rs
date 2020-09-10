@@ -6,8 +6,8 @@ use rusoto_sqs::{
     DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry, Message, ReceiveMessageError,
     ReceiveMessageRequest, Sqs, SqsClient,
 };
-use slog::{error, info, slog_o, Drain};
 use structopt::StructOpt;
+use tracing::{event, span, Level};
 
 use config::Options;
 use email_shared::Client;
@@ -15,16 +15,24 @@ use email_shared::Client;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Setup Logger
-    let decorator = slog_term::TermDecorator::new().stdout().build();
-    let drain = slog_term::FullFormat::new(decorator).build().fuse();
-    let drain = slog_async::Async::new(drain).build().fuse();
-    let logger = slog::Logger::root(drain, slog_o!("version" => env!("CARGO_PKG_VERSION")));
+    let subscriber = tracing_subscriber::fmt()
+        .with_timer(tracing_subscriber::fmt::time::ChronoUtc::rfc3339())
+        .finish();
+    let _subscriber_guard = tracing::subscriber::set_global_default(subscriber);
+    let main_span = span!(
+        Level::INFO,
+        "email_broker",
+        Version = env!("CARGO_PKG_VERSION"),
+    );
+    let _main_guard = main_span.enter();
     // Start
     let opt = Options::from_args();
-    info!(logger, "broker init";
-        "queue_url" => &opt.queue_url,
-        "region" => &opt.region.name(),
-        "table_name" => &opt.table_name,
+    event!(
+        Level::INFO,
+        queue_url = %opt.queue_url,
+        region = %opt.region.name(),
+        table_name = %opt.table_name,
+        "broker init",
     );
     let sqs = SqsClient::new(opt.region.clone());
     let dynamodb = DynamoDbClient::new(opt.region.clone());
@@ -35,7 +43,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let processed_messages = match message_list {
             Ok(messages) => client.process_messages(messages).await,
             Err(error) => {
-                error!(logger, "ReceiveMessageError"; "error" => %error);
+                event!(Level::ERROR, %error, "ReceiveMessageError");
                 Vec::new()
             }
         };
@@ -47,7 +55,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             entries: entries_to_delete,
             queue_url: queue_url.into(),
         };
-        info!(logger, "delete messages"; "count" => delete_messages_request.entries.len());
+        event!(
+            Level::INFO,
+            count = delete_messages_request.entries.len(),
+            "delete messages"
+        );
         if opt.dry_run {
             break;
         }

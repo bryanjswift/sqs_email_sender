@@ -17,15 +17,14 @@ use rusoto_sqs::{
     DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry, Message, Sqs, SqsClient,
 };
 use serde::{Deserialize, Serialize};
-use slog::{error, info, slog_o, warn, Drain};
 use std::convert::TryFrom;
 use std::env;
+use tracing::{event, span, Level};
 
 const DYNAMO_TABLE: &str = "DYNAMO_TABLE";
 const QUEUE_URL: &str = "QUEUE_URL";
 
 lazy_static! {
-    static ref LOGGER: slog::Logger = get_root_logger();
     static ref DYNAMODB: DynamoDbClient = DynamoDbClient::new(Region::UsEast1);
     static ref SQS: SqsClient = SqsClient::new(Region::UsEast1);
 }
@@ -42,15 +41,23 @@ struct CustomOutput {
 }
 
 fn main() {
+    let subscriber = tracing_subscriber::fmt()
+        .json()
+        .with_timer(tracing_subscriber::fmt::time::ChronoUtc::rfc3339())
+        .finish();
+    let _guard = tracing::subscriber::set_global_default(subscriber);
     lambda!(handler);
 }
 
 #[tokio::main]
 async fn handler(event: SqsEvent, context: Context) -> Result<CustomOutput, HandlerError> {
-    let logger = LOGGER.new(slog_o!(
-        "RequestId" => context.aws_request_id,
-        "Version" => context.function_version,
-    ));
+    let handler_span = span!(
+        Level::INFO,
+        "email_lambda#handler",
+        RequestId = %context.aws_request_id,
+        Version = %context.function_version,
+    );
+    let _handler_guard = handler_span.enter();
     // Start
     let mut entries_to_delete = Vec::new();
     // Read dynamo db table name from config or environment
@@ -68,25 +75,22 @@ async fn handler(event: SqsEvent, context: Context) -> Result<CustomOutput, Hand
         let pointer = match pointer {
             Ok(record) => record,
             Err(msg) => {
-                error!(logger, "pointer parse failure"; "msg" => msg);
+                event!(Level::ERROR, msg, "pointer parse failure");
                 continue;
             }
         };
         // Create logger for this record
-        let record_logger = logger.new(slog_o!("email_id" => pointer.email_id.clone()));
+        let record_span = span!(Level::INFO, "message", email_id = %&pointer.email_id);
+        let _record_guard = record_span.enter();
         // 2. Get email data from dynamo db table
         // 3. Parse dynamo data into object for sending
-        info!(record_logger, "get email";
-            "table_name" => &table_name
-        );
+        event!(Level::INFO, %table_name, "get email");
         let email = get_email_message(&DYNAMODB, &table_name, &pointer).await;
         // 4. If status of email is not `EmailStatus::Pending` log a warning and skip sending. The
         //    message to remove will automatically be created.
         let email = match email {
             Ok(mail) if mail.status != EmailStatus::Pending => {
-                warn!(record_logger, "email not pending";
-                    "email_status" => &mail.status.to_string(),
-                );
+                event!(Level::WARN, email_status = %mail.status, "email not {}", EmailStatus::Pending);
                 // See 8.
                 // Skipping doesn't work unless the pointer is recorded as an entry to be deleted.
                 entries_to_delete.push(DeleteMessageBatchRequestEntry::from(&pointer));
@@ -94,7 +98,7 @@ async fn handler(event: SqsEvent, context: Context) -> Result<CustomOutput, Hand
             }
             Ok(mail) => mail,
             Err(error) => {
-                error!(record_logger, "get email failed"; "error" => error.to_string());
+                event!(Level::ERROR, %error, "get email failed");
                 continue;
             }
         };
@@ -102,17 +106,15 @@ async fn handler(event: SqsEvent, context: Context) -> Result<CustomOutput, Hand
         //    not try to send the same email
         let update_result = upate_to_sending(&table_name, &pointer).await;
         if let Err(error) = update_result {
-            error!(record_logger, "update email failed"; "error" => error.to_string());
+            event!(Level::ERROR, %error, "update email failed");
             continue;
         }
         // 6. TODO: Send the message
-        info!(record_logger, "start email transmit";
-            "email_status" => &email.status.to_string()
-        );
+        event!(Level::INFO, email_status = %email.status, "start email transmit");
         // 7. Update the message status in dynamo to sent
         let update_result = upate_to_sent(&table_name, &pointer).await;
         if let Err(error) = update_result {
-            error!(record_logger, "update email failed"; "error" => error.to_string());
+            event!(Level::ERROR, %error, "update email failed");
             continue;
         }
         // 8. Messages are automatically removed from the queue if lambda succeeds. Keep track of
@@ -124,17 +126,13 @@ async fn handler(event: SqsEvent, context: Context) -> Result<CustomOutput, Hand
     // Read the queue url from config
     let entries_to_delete_count = entries_to_delete.len();
     if record_count == entries_to_delete_count {
-        info!(logger, "success";
-            "entries_to_delete" => ?&entries_to_delete,
-        );
+        event!(Level::INFO, ?entries_to_delete, "success");
         Ok(CustomOutput {
             message: format!("Goodbye {:?}", &entries_to_delete),
         })
     } else {
         // Delete "processed" messages from SQS
-        info!(logger, "partial failure";
-            "entries_to_delete" => ?&entries_to_delete,
-        );
+        event!(Level::INFO, ?entries_to_delete, "partial failure");
         let delete_response = &SQS
             .delete_message_batch(DeleteMessageBatchRequest {
                 entries: entries_to_delete,
@@ -177,22 +175,4 @@ async fn upate_to_sent(table_name: &str, pointer: &EmailPointerMessage) -> Resul
         EmailStatus::Sent,
     )
     .await
-}
-
-/// Lambda writes timestamps to CloudWatch logs already, so do not write anything when asked for a
-/// timestamp.
-fn noop_timestamp(_: &mut dyn std::io::Write) -> std::io::Result<()> {
-    Ok(())
-}
-
-/// Create the "root" `slog::Logger` to use.
-fn get_root_logger() -> slog::Logger {
-    // Setup Logger
-    let decorator = slog_term::PlainDecorator::new(std::io::stdout());
-    let drain = slog_term::FullFormat::new(decorator)
-        .use_custom_timestamp(noop_timestamp)
-        .build()
-        .fuse();
-    let drain = slog_async::Async::new(drain).build().fuse();
-    slog::Logger::root(drain, slog_o!())
 }
