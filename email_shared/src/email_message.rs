@@ -1,9 +1,10 @@
+use serde::Deserialize;
 use thiserror::Error;
 
 /// A `Recipient` represents an address to which a message will be sent.
 type Recipient = String;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
 pub enum EmailStatus {
     Pending,
     Sending,
@@ -35,7 +36,8 @@ impl std::fmt::Display for EmailStatus {
 }
 
 /// An attachment to an `EmailMessage`.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(default)]
 pub struct EmailMessageAttachment {
     /// base64 encoded contents of the message.
     body: String,
@@ -52,7 +54,8 @@ pub struct EmailMessageAttachment {
 }
 
 /// Represents data to be sent as an email via mail delivery services.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(default)]
 pub struct EmailMessage {
     /// Attachments to include with the email message.
     pub attachments: Vec<EmailMessageAttachment>,

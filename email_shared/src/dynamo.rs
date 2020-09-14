@@ -112,6 +112,13 @@ mod try_from {
                 ..AttributeValue::default()
             },
         );
+        attrs.insert(
+            "EmailStatus".into(),
+            AttributeValue {
+                s: Some("Pending".into()),
+                ..AttributeValue::default()
+            },
+        );
         let item = Some(attrs);
         let output = GetItemOutput {
             consumed_capacity: None,
