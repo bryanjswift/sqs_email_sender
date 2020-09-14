@@ -5,6 +5,6 @@ pub mod email_message;
 mod error;
 pub mod queue;
 
-pub use client::Client;
-pub use dynamo::{get_email_message, set_email_status};
-pub use error::{GetError, UpdateError};
+pub use crate::client::Client;
+pub use crate::dynamo::{get_email_message, set_email_status};
+pub use crate::error::{GetError, UpdateError};
