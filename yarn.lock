@@ -612,6 +612,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aws-cdk/cfnspec@npm:1.63.0":
+  version: 1.63.0
+  resolution: "@aws-cdk/cfnspec@npm:1.63.0"
+  dependencies:
+    md5: ^2.3.0
+  checksum: 6ecc6aee54b6a04a79ba4e06aa8da4253d6b429791bf6e66315da80a15656b26228b6947e22032d71227539b888b7581cdce052818eb534c3541ae7836e52269
+  languageName: node
+  linkType: hard
+
 "@aws-cdk/cloud-assembly-schema@npm:1.62.0":
   version: 1.62.0
   resolution: "@aws-cdk/cloud-assembly-schema@npm:1.62.0"
@@ -619,6 +628,16 @@ __metadata:
     jsonschema: ^1.2.5
     semver: ^7.2.2
   checksum: c85396da1e58a87c0beea891655dfd741984a7839dd3b4cc5462b0417bb95dd45e083e6703fac9531aedbf8c94594ba0fc9834db58dafaf75761778fcfdad32c
+  languageName: node
+  linkType: hard
+
+"@aws-cdk/cloud-assembly-schema@npm:1.63.0":
+  version: 1.63.0
+  resolution: "@aws-cdk/cloud-assembly-schema@npm:1.63.0"
+  dependencies:
+    jsonschema: ^1.2.5
+    semver: ^7.2.2
+  checksum: 2d3ab0551515dd3ef0b1e6a855c24826ef2d67d8fcffcbfa890a316e5989c0bbe96a1b5fa5561ad3f899df2896e288f6439d19c2b213699563663e31426211fc
   languageName: node
   linkType: hard
 
@@ -633,6 +652,20 @@ __metadata:
     string-width: ^4.2.0
     table: ^5.4.6
   checksum: 25c97b59694ec760391873acadee01f47ba6db153cde41cbc7cb1617d81e044f2dd88aeb046016b7803cf06dff037786493d775d894d05b6f17090b42e914d64
+  languageName: node
+  linkType: hard
+
+"@aws-cdk/cloudformation-diff@npm:1.63.0":
+  version: 1.63.0
+  resolution: "@aws-cdk/cloudformation-diff@npm:1.63.0"
+  dependencies:
+    "@aws-cdk/cfnspec": 1.63.0
+    colors: ^1.4.0
+    diff: ^4.0.2
+    fast-deep-equal: ^3.1.3
+    string-width: ^4.2.0
+    table: ^5.4.6
+  checksum: 9d61bf2acd767114f6ce2bd7c03ecd2857e41a620ae439c7b918228ccb31e6c1f48956a442216e6bfe354d2c96bd61009b5fa2ad0e3d0d02527640c747b9b6ee
   languageName: node
   linkType: hard
 
@@ -688,10 +721,29 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aws-cdk/cx-api@npm:1.63.0":
+  version: 1.63.0
+  resolution: "@aws-cdk/cx-api@npm:1.63.0"
+  dependencies:
+    "@aws-cdk/cloud-assembly-schema": 1.63.0
+    semver: ^7.2.2
+  peerDependencies:
+    "@aws-cdk/cloud-assembly-schema": 1.63.0
+  checksum: e1bd83b2a7d1e060d4018b09f223d1fb523affec4fe0c879ad70bb8964e4e47d33dc6d610a16bea3da7c4de60159c512fc7c028535420c27bc0c92385dd463ee
+  languageName: node
+  linkType: hard
+
 "@aws-cdk/region-info@npm:1.62.0":
   version: 1.62.0
   resolution: "@aws-cdk/region-info@npm:1.62.0"
   checksum: 408641f80a561189b9138ec675ff46c8c77796d9c1c0010744696f2277bb261f291bb55b47ad64b80448dd369392b5d6ceaffcc5bcf7fcb1e9783de9aafb89d7
+  languageName: node
+  linkType: hard
+
+"@aws-cdk/region-info@npm:1.63.0":
+  version: 1.63.0
+  resolution: "@aws-cdk/region-info@npm:1.63.0"
+  checksum: 09a67fc3d54b89b29648668adb054c75c5119546ecb36d7a09b06c3d03c28c7615c6072776b054c97149e203f2af65ce7749bfebf2ad009e718263300eaac91b
   languageName: node
   linkType: hard
 
@@ -738,11 +790,11 @@ __metadata:
     "@aws-cdk/core": 1.62.0
     "@types/node": 10.17.27
     "@types/tape": 4.13.0
-    aws-cdk: 1.62.0
+    aws-cdk: 1.63.0
     source-map-support: 0.5.19
     tape: 5.0.1
     ts-node: 9.0.0
-    typescript: 4.0.2
+    typescript: 4.0.3
   bin:
     cdk: bin/cdk.js
   languageName: unknown
@@ -953,18 +1005,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aws-cdk@npm:1.62.0":
-  version: 1.62.0
-  resolution: "aws-cdk@npm:1.62.0"
+"aws-cdk@npm:1.63.0":
+  version: 1.63.0
+  resolution: "aws-cdk@npm:1.63.0"
   dependencies:
-    "@aws-cdk/cloud-assembly-schema": 1.62.0
-    "@aws-cdk/cloudformation-diff": 1.62.0
-    "@aws-cdk/cx-api": 1.62.0
-    "@aws-cdk/region-info": 1.62.0
+    "@aws-cdk/cloud-assembly-schema": 1.63.0
+    "@aws-cdk/cloudformation-diff": 1.63.0
+    "@aws-cdk/cx-api": 1.63.0
+    "@aws-cdk/region-info": 1.63.0
     archiver: ^4.0.2
     aws-sdk: ^2.739.0
     camelcase: ^6.0.0
-    cdk-assets: 1.62.0
+    cdk-assets: 1.63.0
     colors: ^1.4.0
     decamelize: ^4.0.0
     fs-extra: ^9.0.1
@@ -982,7 +1034,7 @@ __metadata:
     yargs: ^15.4.1
   bin:
     cdk: bin/cdk
-  checksum: 1bc5271a5450029a93107e5b72826652ce18947cf2493af345bd6cbc7d0a528de9052567c99904c0315f1295f3df279b29445dbfe8d3ddefd220d4a647b87a66
+  checksum: 8fabb25a96f8dd96536cccf37e1583964312178b620e1e07f38bd80984a9de1e6162d47fcee9da37040b65c651fb6957047e405764e155324935a012ab44cef4
   languageName: node
   linkType: hard
 
@@ -1101,19 +1153,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cdk-assets@npm:1.62.0":
-  version: 1.62.0
-  resolution: "cdk-assets@npm:1.62.0"
+"cdk-assets@npm:1.63.0":
+  version: 1.63.0
+  resolution: "cdk-assets@npm:1.63.0"
   dependencies:
-    "@aws-cdk/cloud-assembly-schema": 1.62.0
-    "@aws-cdk/cx-api": 1.62.0
+    "@aws-cdk/cloud-assembly-schema": 1.63.0
+    "@aws-cdk/cx-api": 1.63.0
     archiver: ^4.0.2
     aws-sdk: ^2.739.0
     glob: ^7.1.6
     yargs: ^15.4.1
   bin:
     cdk-assets: bin/cdk-assets
-  checksum: bc52399339196ec933856416ad6e568bb3043e51cdc3228b677ef0e91dd5ff83570a8ec121f0b621cde90523bfd1d360889b41c2d875fe15603365f8ae2b6f43
+  checksum: b98827c9cd46363690b855f0b388583864db71834cc13576338927f673e187fd0783441a2a8dca6ca278b363531376c5fb3822ecc4d9eaa9798914a98301ebcb
   languageName: node
   linkType: hard
 
@@ -1484,9 +1536,9 @@ __metadata:
   resolution: "email_service@workspace:."
   dependencies:
     husky: 4.3.0
-    prettier: 2.1.1
-    pretty-quick: 3.0.0
-    typescript: 4.0.2
+    prettier: 2.1.2
+    pretty-quick: 3.0.2
+    typescript: 4.0.3
   languageName: unknown
   linkType: soft
 
@@ -2641,18 +2693,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:2.1.1":
-  version: 2.1.1
-  resolution: "prettier@npm:2.1.1"
+"prettier@npm:2.1.2":
+  version: 2.1.2
+  resolution: "prettier@npm:2.1.2"
   bin:
     prettier: bin-prettier.js
-  checksum: 420a807cda2d482388daa42379a7aaa1be629cb71f5792362a971a5ed1c6ff377d2e311818d24e9390a4a8a6eac3fda9ebe6975f2168efec893790c0497d8a93
+  checksum: bedc24c568efbcfe45f255558900777e2fabb36bf28ed4c22d2456eb22dfb012d12e566a46472ea5b857a4e9f263e888f7e316527d00bb58188f1820b0b0031a
   languageName: node
   linkType: hard
 
-"pretty-quick@npm:3.0.0":
-  version: 3.0.0
-  resolution: "pretty-quick@npm:3.0.0"
+"pretty-quick@npm:3.0.2":
+  version: 3.0.2
+  resolution: "pretty-quick@npm:3.0.2"
   dependencies:
     chalk: ^3.0.0
     execa: ^4.0.0
@@ -2664,7 +2716,7 @@ __metadata:
     prettier: ">=2.0.0"
   bin:
     pretty-quick: bin/pretty-quick.js
-  checksum: 3e8c721be94147f5efd63ea239c00d246890e149fc1afbb373737fa4d915fa515c94f40d4e046fbc2b6871b7abedfd05229f832df6ec27d3de51e4b81cea9fec
+  checksum: 2f0a136cd278406af6498f2e1ca16fb1676947849d502387a8cf3d1c01f9e07bfe27200c41f391524b9efadacd06080975aad2dfa8889023a259cebd0467a6d8
   languageName: node
   linkType: hard
 
@@ -3246,23 +3298,23 @@ resolve@^1.17.0:
   languageName: node
   linkType: hard
 
-typescript@4.0.2:
-  version: 4.0.2
-  resolution: "typescript@npm:4.0.2"
+typescript@4.0.3:
+  version: 4.0.3
+  resolution: "typescript@npm:4.0.3"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: cc0e7806eee7997a1b4b2990badacc4a8d089893ed0a377f35c9658e2ac392503cb340d0187203ed82e36e427dda94b0fb7107e44a71cca99efac86be26e16ee
+  checksum: 5c892e132756a83d22030d7fb38be47cde27613f71d233dbe7faf79e4a92852c5146bfddcaf8c2da1a37d35ae8bf7b8c888fdcd763d5ad184cea6b21e7466838
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@4.0.2#builtin<compat/typescript>":
-  version: 4.0.2
-  resolution: "typescript@patch:typescript@npm%3A4.0.2#builtin<compat/typescript>::version=4.0.2&hash=5b02a2"
+"typescript@patch:typescript@4.0.3#builtin<compat/typescript>":
+  version: 4.0.3
+  resolution: "typescript@patch:typescript@npm%3A4.0.3#builtin<compat/typescript>::version=4.0.3&hash=5b02a2"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: b8b689ef994cce4fe59950d56ddfffce3c4bdda8edb85b72e752d4a6d27bf7df8a318e76ccde25cbe6e642058f2f4ccf47187db4b243bbc98278a2844db9461b
+  checksum: 72db87d09f728c83062d64b5e12ed52effb6278963b6bc5c006219b22c104e02b8ce80164261de554923d3c47d894a1ca937ed542328caccb83ebaedeae98a69
   languageName: node
   linkType: hard
 
