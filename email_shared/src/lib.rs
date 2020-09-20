@@ -6,5 +6,5 @@ mod error;
 pub mod queue;
 
 pub use crate::client::Client;
-pub use crate::dynamo::{get_email_message, set_email_status};
+pub use crate::dynamo::{from_hashmap, get_email_message, set_email_status};
 pub use crate::error::{GetError, UpdateError};

@@ -1,7 +1,8 @@
 use rusoto_dynamodb::{DynamoDb, DynamoDbClient, GetItemInput, GetItemOutput, UpdateItemInput};
 use std::convert::TryFrom;
 
-use crate::attribute_value_wrapper::{AttributeValueMap, DynamoItemWrapper};
+use crate::attribute_value_wrapper::AttributeValueMap;
+use crate::dynamo::error::DeserializeError;
 use crate::email_message::{EmailMessage, EmailStatus};
 use crate::error::{GetError, UpdateError};
 use crate::queue::EmailPointerMessage;
@@ -51,21 +52,14 @@ pub async fn set_email_status(
         .and_then(|_| Ok(()))
 }
 
-fn extract_email_field(wrapper: &DynamoItemWrapper, field: &str) -> Result<String, GetError> {
-    wrapper.s(field, GetError::PropertyMissing(field.into()))
-}
-
 impl TryFrom<GetItemOutput> for EmailMessage {
     type Error = GetError;
 
     fn try_from(data: GetItemOutput) -> Result<Self, Self::Error> {
         let item = data.item.ok_or(GetError::RecordNotFound)?;
-        let wrapper = DynamoItemWrapper::new(item);
-        Ok(EmailMessage {
-            email_id: extract_email_field(&wrapper, "EmailId")?,
-            subject: extract_email_field(&wrapper, "Subject")?,
-            status: EmailStatus::from(extract_email_field(&wrapper, "EmailStatus")?.as_ref()),
-            ..EmailMessage::default()
+        crate::from_hashmap(item).map_err(|e| match e {
+            DeserializeError::FieldMissing(field) => GetError::PropertyMissing(field),
+            _ => GetError::ParseError(e.to_string()),
         })
     }
 }
