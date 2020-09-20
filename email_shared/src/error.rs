@@ -55,6 +55,8 @@ impl From<RusotoError<UpdateItemError>> for UpdateError {
 pub enum GetError {
     #[error("InternalServerError({0})")]
     InternalServerError(String),
+    #[error("ParseError({0})")]
+    ParseError(String),
     #[error("PropertyMissiong({0})")]
     PropertyMissing(String),
     #[error("ProvisionedThroughputExceeded({0})")]
