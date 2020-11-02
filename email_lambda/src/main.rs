@@ -9,8 +9,6 @@ use email_shared::email_message::EmailStatus;
 use email_shared::queue::EmailPointerMessage;
 use email_shared::{get_email_message, set_email_status, UpdateError};
 use error::EmailHandlerError;
-use lambda_runtime::error::HandlerError;
-use lambda_runtime::{lambda, Context};
 use rusoto_core::Region;
 use rusoto_dynamodb::DynamoDbClient;
 use rusoto_sqs::{
@@ -40,22 +38,28 @@ struct CustomOutput {
     message: String,
 }
 
-fn main() {
+type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+
+#[tokio::main]
+async fn main() -> Result<(), Error> {
     let subscriber = tracing_subscriber::fmt()
         .json()
         .with_timer(tracing_subscriber::fmt::time::ChronoUtc::rfc3339())
         .finish();
     let _guard = tracing::subscriber::set_global_default(subscriber);
-    lambda!(handler);
+    lambda::run(lambda::handler_fn(handler)).await?;
+    Ok(())
 }
 
-#[tokio::main]
-async fn handler(event: SqsEvent, context: Context) -> Result<CustomOutput, HandlerError> {
+async fn handler(
+    event: SqsEvent,
+    context: lambda::Context,
+) -> Result<CustomOutput, EmailHandlerError> {
     let handler_span = span!(
         Level::INFO,
         env!("CARGO_PKG_NAME"),
-        RequestId = %context.aws_request_id,
-        Version = %context.function_version,
+        RequestId = %context.request_id,
+        ARN = %context.invoked_function_arn,
     );
     let _handler_guard = handler_span.enter();
     // Start
@@ -144,7 +148,7 @@ async fn handler(event: SqsEvent, context: Context) -> Result<CustomOutput, Hand
             Ok(_) => EmailHandlerError::BatchFailure,
             Err(_) => EmailHandlerError::SqsDeleteFailed,
         };
-        Err(HandlerError::new(error))
+        Err(error)
     }
 }
 
