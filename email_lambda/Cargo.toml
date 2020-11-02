@@ -13,8 +13,8 @@ lazy_static = "1.4.0"
 rusoto_core = "0.45.0"
 rusoto_dynamodb = "0.45.0"
 rusoto_sqs = { version = "0.45.0", features = [ "deserialize_structs" ] }
-serde = "1.0.115"
-serde_json = "1.0.57"
+serde = "1.0.117"
+serde_json = "1.0.59"
 tokio = { version = "0.2.22", features = ["macros", "rt-core"] }
-tracing = "0.1.19"
-tracing-subscriber = { version = "0.2.11", features = ["fmt", "json"] }
+tracing = "0.1.21"
+tracing-subscriber = { version = "0.2.14", features = ["fmt", "json"] }
