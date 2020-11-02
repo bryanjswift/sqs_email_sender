@@ -3,7 +3,7 @@
 
 __metadata:
   version: 4
-  cacheKey: 6
+  cacheKey: 7
 
 "@aws-cdk/assert@npm:1.62.0":
   version: 1.62.0
@@ -2270,9 +2270,9 @@ __metadata:
   linkType: hard
 
 "jsonschema@npm:^1.2.5":
-  version: 1.2.6
-  resolution: "jsonschema@npm:1.2.6"
-  checksum: 36c02e0a1c8e3596f0f11141c60a9d5db10aa751719106311b60ce9ec14d28b39d57a708f9920b3b92f3e1a1e54e4fd583e74f00f761d56bdc1f997fc21c8dec
+  version: 1.4.0
+  resolution: "jsonschema@npm:1.4.0"
+  checksum: d2abc356b4b65faacd8ca55beb15fef8c8c2129d3f67a86097b737bf3195a2eb4303623d34a4ec0e830687b681fd517bca2e47b28f6660fa9553126627876c74
   languageName: node
   linkType: hard
 
@@ -3310,7 +3310,7 @@ typescript@4.0.3:
 
 "typescript@patch:typescript@4.0.3#builtin<compat/typescript>":
   version: 4.0.3
-  resolution: "typescript@patch:typescript@npm%3A4.0.3#builtin<compat/typescript>::version=4.0.3&hash=5b02a2"
+  resolution: "typescript@patch:typescript@npm%3A4.0.3#builtin<compat/typescript>::version=4.0.3&hash=5bf698"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
