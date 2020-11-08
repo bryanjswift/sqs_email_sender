@@ -6,6 +6,7 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "tape",
+    "test:dev": "tape -r test/runner.js",
     "test:ci": "yarn build && yarn test test/**/*.test.js",
     "cdk": "cdk"
   },
