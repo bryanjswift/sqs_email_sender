@@ -108,6 +108,29 @@ aws lambda update-function-code --function-name <function_name> \
   --zip-file fileb://./email_lambda.zip
 ```
 
+### Deploy with AWS CDK
+
+List the stacks available for deployment
+
+```shell
+yarn workspace @email_service/cdk cdk list
+```
+
+Deploy as specific stack from the list
+
+```shell
+yarn workspace @email_service/cdk cdk deploy <stack name>
+```
+
+### Take it for a spin
+
+1. Put an item into dynamodb
+1. Send a message
+
+   ```shell
+   aws sqs send-message --queue-url="<QueueUrl>" --message-body='{"email_id":"test-1"}'
+   ```
+
 ## License
 
 This experiment is released under the [MIT License](LICENSE). Feel free to
