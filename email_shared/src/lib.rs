@@ -6,4 +6,3 @@ mod error;
 pub mod queue;
 
 pub use crate::client::Client;
-pub use crate::error::ProcessError;
