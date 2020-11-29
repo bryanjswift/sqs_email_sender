@@ -52,10 +52,7 @@ impl Client<'_> {
 
     /// For the given `Message` attempt to extract an `EmailPointerMessage` and transmit the associated
     /// `EmailMessage` with the declared sending service.
-    pub async fn process_message(
-        &self,
-        message: Message,
-    ) -> Result<EmailPointerMessage, ProcessError> {
+    async fn process_message(&self, message: Message) -> Result<EmailPointerMessage, ProcessError> {
         let table_name = self.table_name.as_ref();
         // Which errors mean try again and which errors mean skip message?
         // 1. Parse email_id from SQS message
