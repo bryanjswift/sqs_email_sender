@@ -14,6 +14,8 @@ export const stacks = STAGES.reduce<StackMap>((map, stage) => {
       'Stack to enable ansynchronous processing of a large volume of email. Email information is stored in DynamoDB and the send trigger is pushed into SQS.',
     stage: stage.toLowerCase(),
   });
-  map[stage] = stack;
-  return map;
+  return {
+    ...map,
+    [stage]: stack,
+  };
 }, {});
