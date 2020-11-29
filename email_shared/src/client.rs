@@ -24,10 +24,10 @@ impl Client<'_> {
     }
 
     #[tracing::instrument(skip(messages), level = Level::INFO)]
-    pub async fn process_messages(
-        &self,
-        messages: Vec<Message>,
-    ) -> Vec<DeleteMessageBatchRequestEntry> {
+    pub async fn process_messages<I>(&self, messages: I) -> Vec<DeleteMessageBatchRequestEntry>
+    where
+        I: IntoIterator<Item = Message>,
+    {
         let mut processed_message_handles = Vec::new();
         for message in messages {
             let message_span =

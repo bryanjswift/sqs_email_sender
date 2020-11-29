@@ -5,11 +5,11 @@ mod error;
 extern crate lazy_static;
 
 use de::MessageDef;
-use email_shared::{Client, ProcessError};
+use email_shared::Client;
 use error::EmailHandlerError;
 use rusoto_core::Region;
 use rusoto_dynamodb::DynamoDbClient;
-use rusoto_sqs::{DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry, Sqs, SqsClient};
+use rusoto_sqs::{DeleteMessageBatchRequest, Sqs, SqsClient};
 use serde::{Deserialize, Serialize};
 use std::env;
 use tracing::{event, span, Level};
@@ -57,8 +57,6 @@ async fn handler(
         ARN = %context.invoked_function_arn,
     );
     let _handler_guard = handler_span.enter();
-    // Start
-    let mut entries_to_delete = Vec::new();
     // Read dynamo db table name from config or environment
     let table_name = env::var(DYNAMO_TABLE)?;
     // Read queue url from config or environment
@@ -68,22 +66,9 @@ async fn handler(
     // Create a shared processing client
     let client = Client::new(&DYNAMODB, &table_name);
     // Process each event record
-    for record in event.records.into_iter() {
-        match client.process_message(record.into()).await {
-            Ok(pointer) | Err(ProcessError::Skip(pointer)) => {
-                entries_to_delete.push(DeleteMessageBatchRequestEntry::from(&pointer));
-            }
-            Err(ProcessError::SkipMessage(message)) => {
-                entries_to_delete.push(DeleteMessageBatchRequestEntry {
-                    id: message.message_id.unwrap(),
-                    receipt_handle: message.receipt_handle.unwrap(),
-                });
-            }
-            Err(ProcessError::Retry) => {
-                continue;
-            }
-        }
-    }
+    let entries_to_delete = client
+        .process_messages(event.records.into_iter().map(|record| record.into()))
+        .await;
     // Compare the number of messages to be deleted with the number received
     let entries_to_delete_count = entries_to_delete.len();
     if record_count == entries_to_delete_count {
