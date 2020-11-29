@@ -27,7 +27,41 @@ pub async fn get_email_message(
         .and_then(EmailMessage::try_from)
 }
 
-pub async fn set_email_status(
+/// Update the `EmailStatus` of the Dynamo record identified by `pointer` to `EmailStatus::Sending` as
+/// long as it is currently in the `EmailStatus::Pending` status.
+pub async fn set_email_to_sending(
+    dynamodb: &DynamoDbClient,
+    table_name: &str,
+    pointer: &EmailPointerMessage,
+) -> Result<(), UpdateError> {
+    set_email_status(
+        dynamodb,
+        table_name,
+        pointer,
+        EmailStatus::Pending,
+        EmailStatus::Sending,
+    )
+    .await
+}
+
+/// Update the `EmailStatus` of the Dynamo record identified by `pointer` to `EmailStatus::Sent` as
+/// long as it is currently in the `EmailStatus::Sending` status.
+pub async fn set_email_to_sent(
+    dynamodb: &DynamoDbClient,
+    table_name: &str,
+    pointer: &EmailPointerMessage,
+) -> Result<(), UpdateError> {
+    set_email_status(
+        dynamodb,
+        table_name,
+        pointer,
+        EmailStatus::Sending,
+        EmailStatus::Sent,
+    )
+    .await
+}
+
+async fn set_email_status(
     dynamodb: &DynamoDbClient,
     table_name: &str,
     message: &EmailPointerMessage,
@@ -57,7 +91,7 @@ impl TryFrom<GetItemOutput> for EmailMessage {
 
     fn try_from(data: GetItemOutput) -> Result<Self, Self::Error> {
         let item = data.item.ok_or(GetError::RecordNotFound)?;
-        crate::from_hashmap(item).map_err(|e| match e {
+        super::from_hashmap(item).map_err(|e| match e {
             DeserializeError::FieldMissing(field) => GetError::PropertyMissing(field),
             _ => GetError::ParseError(e.to_string()),
         })

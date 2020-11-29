@@ -1,5 +1,3 @@
-use email_shared::GetError;
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum EmailHandlerError {
     InitializationFailure,
@@ -25,11 +23,5 @@ impl std::error::Error for EmailHandlerError {}
 impl From<std::env::VarError> for EmailHandlerError {
     fn from(_value: std::env::VarError) -> Self {
         Self::InitializationFailure
-    }
-}
-
-impl From<GetError> for EmailHandlerError {
-    fn from(_value: GetError) -> Self {
-        EmailHandlerError::PartialBatchFailure
     }
 }
