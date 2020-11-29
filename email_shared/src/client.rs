@@ -5,7 +5,7 @@ use crate::queue::EmailPointerMessage;
 use rusoto_dynamodb::DynamoDbClient;
 use rusoto_sqs::{DeleteMessageBatchRequestEntry, Message};
 use std::convert::TryFrom;
-use tracing::{event, span, Level};
+use tracing::{event, span, Instrument, Level};
 
 /// Hold references to external service clients so they only need to be allocated once.
 pub struct Client<'a> {
@@ -23,15 +23,16 @@ impl Client<'_> {
         }
     }
 
+    #[tracing::instrument(skip(messages), level = Level::INFO)]
     pub async fn process_messages(
         &self,
         messages: Vec<Message>,
     ) -> Vec<DeleteMessageBatchRequestEntry> {
-        let process_messages_span = span!(Level::INFO, "process_messages");
-        let _process_messages_guard = process_messages_span.enter();
         let mut processed_message_handles = Vec::new();
         for message in messages {
-            match self.process_message(message).await {
+            let message_span =
+                span!(Level::INFO, "process_message", message_id = ?&message.message_id);
+            match self.process_message(message).instrument(message_span).await {
                 Ok(pointer) | Err(ProcessError::Skip(pointer)) => {
                     processed_message_handles.push(DeleteMessageBatchRequestEntry::from(&pointer));
                 }
@@ -67,8 +68,6 @@ impl Client<'_> {
             }
         };
         // Create logger for this record
-        let record_span = span!(Level::INFO, "message", email_id = %&pointer.email_id);
-        let _record_guard = record_span.enter();
         // 2. Get email data from dynamo db table
         // 3. Parse dynamo data into object for sending
         event!(Level::INFO, %table_name, "get email");
@@ -118,5 +117,11 @@ impl Client<'_> {
     async fn send_email(email: EmailMessage) -> Result<(), String> {
         event!(Level::INFO, email = ?email, "send_email");
         Err("Unimplemented".into())
+    }
+}
+
+impl<'a> std::fmt::Debug for Client<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Client").finish()
     }
 }
