@@ -1,4 +1,6 @@
-use crate::dynamo::{get_email_message, set_email_to_sending, set_email_to_sent};
+use crate::dynamo::{
+    get_email_message, set_email_to_pending, set_email_to_sending, set_email_to_sent,
+};
 use crate::email_message::{EmailMessage, EmailStatus};
 use crate::error::ProcessError;
 use crate::queue::EmailPointerMessage;
@@ -97,7 +99,15 @@ impl Client<'_> {
         let send_result = Client::send_email(email).await;
         if let Err(error) = send_result {
             event!(Level::ERROR, %error, "send email failed");
-            return Err(ProcessError::Retry);
+            // 6a. If unable to send, set the status back to `EmailStatus::Pending`
+            return match set_email_to_pending(dynamodb, table_name, &pointer).await {
+                Ok(_) => Err(ProcessError::Retry),
+                Err(error) => {
+                    // 6b. If unable to reset to Pending the next run through will skip anyway
+                    event!(Level::ERROR, %error, "reset email status to Pending failed");
+                    Err(ProcessError::Skip(pointer))
+                }
+            };
         }
         // 7. Update the message status in dynamo to sent
         let update_result = set_email_to_sent(dynamodb, table_name, &pointer).await;
