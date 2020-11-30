@@ -27,6 +27,22 @@ pub async fn get_email_message(
         .and_then(EmailMessage::try_from)
 }
 
+/// Update the `EmailStatus` of the Dynamo record identified by `pointer` to `EmailStatus::Pending` as
+/// long as it is currently in the `EmailStatus::Sending` status.
+pub async fn set_email_to_pending(
+    dynamodb: &DynamoDbClient,
+    table_name: &str,
+    pointer: &EmailPointerMessage,
+) -> Result<(), UpdateError> {
+    set_email_status(
+        dynamodb,
+        table_name,
+        pointer,
+        FromTo(EmailStatus::Sending, EmailStatus::Pending),
+    )
+    .await
+}
+
 /// Update the `EmailStatus` of the Dynamo record identified by `pointer` to `EmailStatus::Sending` as
 /// long as it is currently in the `EmailStatus::Pending` status.
 pub async fn set_email_to_sending(
@@ -38,8 +54,7 @@ pub async fn set_email_to_sending(
         dynamodb,
         table_name,
         pointer,
-        EmailStatus::Pending,
-        EmailStatus::Sending,
+        FromTo(EmailStatus::Pending, EmailStatus::Sending),
     )
     .await
 }
@@ -55,19 +70,20 @@ pub async fn set_email_to_sent(
         dynamodb,
         table_name,
         pointer,
-        EmailStatus::Sending,
-        EmailStatus::Sent,
+        FromTo(EmailStatus::Sending, EmailStatus::Sent),
     )
     .await
 }
 
+/// Update the `EmailStatus` of the Dynamo record identified by `pointer` based on the `FromTo`
+/// structure.
 async fn set_email_status(
     dynamodb: &DynamoDbClient,
     table_name: &str,
     message: &EmailPointerMessage,
-    current_status: EmailStatus,
-    next_status: EmailStatus,
+    args: FromTo,
 ) -> Result<(), UpdateError> {
+    let FromTo(current_status, next_status) = args;
     let input = UpdateItemInput {
         condition_expression: Some("EmailStatus = :expected".to_owned()),
         expression_attribute_values: Some(AttributeValueMap::with_entries(vec![
@@ -85,6 +101,9 @@ async fn set_email_status(
         .map_err(UpdateError::from)
         .and_then(|_| Ok(()))
 }
+
+#[derive(Clone, Copy, Debug)]
+struct FromTo(EmailStatus, EmailStatus);
 
 impl TryFrom<GetItemOutput> for EmailMessage {
     type Error = GetError;
