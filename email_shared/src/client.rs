@@ -53,7 +53,8 @@ impl Client<'_> {
     /// For the given `Message` attempt to extract an `EmailPointerMessage` and transmit the associated
     /// `EmailMessage` with the declared sending service.
     async fn process_message(&self, message: Message) -> Result<EmailPointerMessage, ProcessError> {
-        let table_name = self.table_name.as_ref();
+        let dynamodb = self.dynamodb;
+        let table_name = self.table_name;
         // Which errors mean try again and which errors mean skip message?
         // 1. Parse email_id from SQS message
         let pointer = EmailPointerMessage::try_from(message.clone());
@@ -68,7 +69,7 @@ impl Client<'_> {
         // 2. Get email data from dynamo db table
         // 3. Parse dynamo data into object for sending
         event!(Level::INFO, %table_name, "get email");
-        let email = get_email_message(self.dynamodb, table_name, &pointer).await;
+        let email = get_email_message(dynamodb, table_name, &pointer).await;
         // 4. If status of email is not `EmailStatus::Pending` log a warning and skip sending. The
         //    message to remove will automatically be created.
         let email = match email {
@@ -86,7 +87,7 @@ impl Client<'_> {
         };
         // 5. Update the message status in dynamo so that a second receiver for this message will
         //    not try to send the same email
-        let update_result = set_email_to_sending(self.dynamodb, table_name, &pointer).await;
+        let update_result = set_email_to_sending(dynamodb, table_name, &pointer).await;
         if let Err(error) = update_result {
             event!(Level::ERROR, %error, "update email status to Sending failed");
             return Err(ProcessError::Retry);
@@ -99,7 +100,7 @@ impl Client<'_> {
             return Err(ProcessError::Retry);
         }
         // 7. Update the message status in dynamo to sent
-        let update_result = set_email_to_sent(self.dynamodb, table_name, &pointer).await;
+        let update_result = set_email_to_sent(dynamodb, table_name, &pointer).await;
         if let Err(error) = update_result {
             event!(Level::ERROR, %error, "update email failed");
             return Err(ProcessError::Retry);
