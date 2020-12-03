@@ -4,3 +4,8 @@ members = [
   "email_lambda",
   "email_shared"
 ]
+
+[profile.release]
+opt-level = "s"
+lto = "fat"
+incremental = true
