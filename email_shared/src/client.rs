@@ -1,6 +1,4 @@
-use crate::dynamo::{
-    get_email_message, set_email_to_pending, set_email_to_sending, set_email_to_sent,
-};
+use crate::dynamo::{get_email_message, set_email_status, FromTo};
 use crate::email_message::{EmailMessage, EmailStatus};
 use crate::error::ProcessError;
 use crate::queue::EmailPointerMessage;
@@ -8,6 +6,10 @@ use rusoto_dynamodb::DynamoDbClient;
 use rusoto_sqs::{DeleteMessageBatchRequestEntry, Message};
 use std::convert::TryFrom;
 use tracing::{event, span, Instrument, Level};
+
+const TO_SENDING: FromTo = FromTo(EmailStatus::Pending, EmailStatus::Sending);
+const TO_PENDING: FromTo = FromTo(EmailStatus::Sending, EmailStatus::Pending);
+const TO_SENT: FromTo = FromTo(EmailStatus::Sending, EmailStatus::Sent);
 
 /// Hold references to external service clients so they only need to be allocated once.
 pub struct Client<'a> {
@@ -89,7 +91,7 @@ impl Client<'_> {
         };
         // 5. Update the message status in dynamo so that a second receiver for this message will
         //    not try to send the same email
-        let update_result = set_email_to_sending(dynamodb, table_name, &pointer).await;
+        let update_result = set_email_status(dynamodb, table_name, &pointer, TO_SENDING).await;
         if let Err(error) = update_result {
             event!(Level::ERROR, %error, "update email status to Sending failed");
             return Err(ProcessError::Retry);
@@ -100,7 +102,7 @@ impl Client<'_> {
         if let Err(error) = send_result {
             event!(Level::ERROR, %error, "send email failed");
             // 6a. If unable to send, set the status back to `EmailStatus::Pending`
-            return match set_email_to_pending(dynamodb, table_name, &pointer).await {
+            return match set_email_status(dynamodb, table_name, &pointer, TO_PENDING).await {
                 Ok(_) => Err(ProcessError::Retry),
                 Err(error) => {
                     // 6b. If unable to reset to Pending the next run through will skip anyway
@@ -110,7 +112,7 @@ impl Client<'_> {
             };
         }
         // 7. Update the message status in dynamo to sent
-        let update_result = set_email_to_sent(dynamodb, table_name, &pointer).await;
+        let update_result = set_email_status(dynamodb, table_name, &pointer, TO_SENT).await;
         if let Err(error) = update_result {
             event!(Level::ERROR, %error, "update email failed");
             return Err(ProcessError::Retry);
