@@ -44,6 +44,7 @@ target/lambda/release/email_lambda: Cargo.lock $(SHARED_SRC) $(LAMBDA_SRC)
 	docker run --rm \
 		-e BIN=email_lambda \
 		-e PACKAGE=false \
+		-e PROFILE=release \
 		-v ${PWD}:/code \
 		-v ${HOME}/.cargo/registry:/root/.cargo/registry \
 		-v ${HOME}/.cargo/git:/root/.cargo/git \
