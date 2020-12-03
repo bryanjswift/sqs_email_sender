@@ -1,3 +1,6 @@
+# Versions
+## https://github.com/softprops/lambda-rust
+V_LAMBDA_RUST ?= "0.3.0-rust-1.45.0"
 # Source files
 ## Find `Cargo.toml` files everywhere
 CARGO_TOML := $(shell find . -name 'Cargo.toml')
@@ -48,7 +51,7 @@ target/lambda/release/email_lambda: Cargo.lock $(SHARED_SRC) $(LAMBDA_SRC)
 		-v ${PWD}:/code \
 		-v ${HOME}/.cargo/registry:/root/.cargo/registry \
 		-v ${HOME}/.cargo/git:/root/.cargo/git \
-		softprops/lambda-rust
+		softprops/lambda-rust:${V_LAMBDA_RUST}
 
 # Build a zip archive which can be uploaded to AWS lambda
 email_lambda.zip: target/lambda/release/email_lambda
