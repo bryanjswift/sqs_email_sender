@@ -1,4 +1,4 @@
-use crate::dynamo::{get_email_message, set_email_status, FromTo};
+use crate::dynamo::{get_email_message, set_email_status, StatusTransition};
 use crate::email_message::{EmailMessage, EmailStatus};
 use crate::error::ProcessError;
 use crate::queue::EmailPointerMessage;
@@ -7,9 +7,18 @@ use rusoto_sqs::{DeleteMessageBatchRequestEntry, Message};
 use std::convert::TryFrom;
 use tracing::{event, span, Instrument, Level};
 
-const TO_SENDING: FromTo = FromTo(EmailStatus::Pending, EmailStatus::Sending);
-const TO_PENDING: FromTo = FromTo(EmailStatus::Sending, EmailStatus::Pending);
-const TO_SENT: FromTo = FromTo(EmailStatus::Sending, EmailStatus::Sent);
+const TO_SENDING: StatusTransition = StatusTransition {
+    from: EmailStatus::Pending,
+    to: EmailStatus::Sending,
+};
+const TO_PENDING: StatusTransition = StatusTransition {
+    from: EmailStatus::Sending,
+    to: EmailStatus::Pending,
+};
+const TO_SENT: StatusTransition = StatusTransition {
+    from: EmailStatus::Sending,
+    to: EmailStatus::Sent,
+};
 
 /// Hold references to external service clients so they only need to be allocated once.
 pub struct Client<'a> {

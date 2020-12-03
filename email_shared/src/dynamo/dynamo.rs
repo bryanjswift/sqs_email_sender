@@ -33,9 +33,12 @@ pub async fn set_email_status(
     dynamodb: &DynamoDbClient,
     table_name: &str,
     message: &EmailPointerMessage,
-    args: FromTo,
+    args: StatusTransition,
 ) -> Result<(), UpdateError> {
-    let FromTo(current_status, next_status) = args;
+    let StatusTransition {
+        from: current_status,
+        to: next_status,
+    } = args;
     let input = UpdateItemInput {
         condition_expression: Some("EmailStatus = :expected".to_owned()),
         expression_attribute_values: Some(AttributeValueMap::with_entries(vec![
@@ -55,7 +58,10 @@ pub async fn set_email_status(
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct FromTo(pub EmailStatus, pub EmailStatus);
+pub struct StatusTransition {
+    pub from: EmailStatus,
+    pub to: EmailStatus,
+}
 
 impl TryFrom<GetItemOutput> for EmailMessage {
     type Error = GetError;
