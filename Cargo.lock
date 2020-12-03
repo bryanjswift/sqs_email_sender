@@ -342,13 +342,14 @@ dependencies = [
 name = "email_shared"
 version = "0.1.0"
 dependencies = [
- "log",
  "rusoto_core",
  "rusoto_dynamodb",
  "rusoto_sqs",
  "serde",
  "serde_json",
  "thiserror",
+ "tracing",
+ "tracing-futures",
 ]
 
 [[package]]

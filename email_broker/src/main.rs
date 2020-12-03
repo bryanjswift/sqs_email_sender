@@ -3,8 +3,7 @@ mod config;
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::DynamoDbClient;
 use rusoto_sqs::{
-    DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry, Message, ReceiveMessageError,
-    ReceiveMessageRequest, Sqs, SqsClient,
+    DeleteMessageBatchRequest, Message, ReceiveMessageError, ReceiveMessageRequest, Sqs, SqsClient,
 };
 use structopt::StructOpt;
 use tracing::{event, span, Level};
@@ -47,19 +46,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Vec::new()
             }
         };
-        let entries_to_delete = processed_messages
-            .iter()
-            .map(DeleteMessageBatchRequestEntry::from)
-            .collect();
         let delete_messages_request = DeleteMessageBatchRequest {
-            entries: entries_to_delete,
+            entries: processed_messages,
             queue_url: queue_url.into(),
         };
-        event!(
-            Level::INFO,
-            count = delete_messages_request.entries.len(),
-            "delete messages"
-        );
+        if delete_messages_request.entries.len() > 0 {
+            match sqs.delete_message_batch(delete_messages_request).await {
+                Ok(result) => event!(Level::TRACE, ?result, "deleted messages"),
+                Err(error) => event!(Level::ERROR, %error, "Delete messages Error"),
+            }
+        } else {
+            event!(
+                Level::INFO,
+                count = delete_messages_request.entries.len(),
+                "no messages to delete"
+            );
+        }
         if opt.dry_run {
             break;
         }

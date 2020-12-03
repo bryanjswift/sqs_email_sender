@@ -37,12 +37,12 @@ impl TryFrom<Message> for EmailPointerMessage {
         match (id, handle, body) {
             (Some(id), Some(handle), Some(pointer)) => Ok(EmailPointerMessage {
                 message_id: id,
-                handle: handle,
+                handle,
                 email_id: pointer.email_id,
             }),
             (None, _, _) => Err("No message id was found"),
             (Some(_), None, _) => Err("No receipt handle for message"),
-            _ => Err("Unable to parse message."),
+            (Some(_), Some(_), None) => Err("Unable to parse EmailPointer."),
         }
     }
 }

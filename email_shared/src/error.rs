@@ -1,5 +1,7 @@
+use crate::queue::EmailPointerMessage;
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::{GetItemError, UpdateItemError};
+use rusoto_sqs::Message;
 use thiserror::Error;
 
 /// Possible errors from updating an item in DynamoDB.
@@ -91,4 +93,15 @@ impl From<RusotoError<GetItemError>> for GetError {
             rusoto_error => Self::ServiceError(format!("{}", rusoto_error)),
         }
     }
+}
+
+/// Possible errors processing an SQS `Message` as an `EmailIdMessage`.
+#[derive(Clone, Debug, Error)]
+pub enum ProcessError {
+    #[error("Retry")]
+    Retry,
+    #[error("Skip({0})")]
+    Skip(EmailPointerMessage),
+    #[error("SkipMessage({0:?})")]
+    SkipMessage(Message),
 }

@@ -27,13 +27,18 @@ pub async fn get_email_message(
         .and_then(EmailMessage::try_from)
 }
 
+/// Update the `EmailStatus` of the Dynamo record identified by `pointer` based on the `FromTo`
+/// structure.
 pub async fn set_email_status(
     dynamodb: &DynamoDbClient,
     table_name: &str,
     message: &EmailPointerMessage,
-    current_status: EmailStatus,
-    next_status: EmailStatus,
+    args: StatusTransition,
 ) -> Result<(), UpdateError> {
+    let StatusTransition {
+        from: current_status,
+        to: next_status,
+    } = args;
     let input = UpdateItemInput {
         condition_expression: Some("EmailStatus = :expected".to_owned()),
         expression_attribute_values: Some(AttributeValueMap::with_entries(vec![
@@ -52,12 +57,18 @@ pub async fn set_email_status(
         .and_then(|_| Ok(()))
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct StatusTransition {
+    pub from: EmailStatus,
+    pub to: EmailStatus,
+}
+
 impl TryFrom<GetItemOutput> for EmailMessage {
     type Error = GetError;
 
     fn try_from(data: GetItemOutput) -> Result<Self, Self::Error> {
         let item = data.item.ok_or(GetError::RecordNotFound)?;
-        crate::from_hashmap(item).map_err(|e| match e {
+        super::from_hashmap(item).map_err(|e| match e {
             DeserializeError::FieldMissing(field) => GetError::PropertyMissing(field),
             _ => GetError::ParseError(e.to_string()),
         })
