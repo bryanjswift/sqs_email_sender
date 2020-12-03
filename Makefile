@@ -32,6 +32,7 @@ test: $(SHARED_SRC) $(BROKER_SRC) $(LAMBDA_SRC)
 
 Cargo.lock: $(CARGO_TOML)
 	cargo check
+	@touch -mr $(shell ls -Atd $? | head -1) $@
 
 target/release/email_broker: Cargo.lock $(SHARED_SRC) $(BROKER_SRC)
 	cargo build --release --bin email_broker
