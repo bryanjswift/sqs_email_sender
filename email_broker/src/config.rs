@@ -9,7 +9,7 @@ fn parse_region(s: &str) -> Region {
     if s == LOCALSTACK_REGION {
         Region::Custom {
             name: LOCALSTACK_REGION.into(),
-            endpoint: "localhost".into(),
+            endpoint: "http://localhost:4566".into(),
         }
     } else {
         s.parse().unwrap_or(Region::default())
