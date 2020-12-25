@@ -67,6 +67,30 @@ have:
 - A DynamoDB table name
 - AWS credentials in the environment that can access both
 
+### Localstack
+
+An emulation of the DynamoDB and SQS resources can be created with Docker and
+the [localstack][localstack] image.
+[`docker-compose.yml`](./docker-compose.yml) is configured to start localstack
+with these services but starting the image does not configure DynamoDB tables
+or SQS queues.
+
+```shell
+# Create an SQS queue called emails_local
+aws --endpoint-url=http://localhost:4566 \
+  sqs create-queue \
+  --queue-name=emails_local
+# Create a DynamoDB table called emails_local
+aws --endpoint-url=http://localhost:4566 \
+  dynamodb create-table \
+  --attribute-definitions=AttributeName=EmailId,AttributeType=S \
+  --table-name=emails_local \
+  --key-schema=AttributeName=EmailId,KeyType=HASH \
+  --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
+```
+
+[localstack]: https://github.com/localstack/localstack
+
 ### Test
 
 ```shell
@@ -106,6 +130,21 @@ aws lambda create-function --function-name <function_name> \
 # Update the lambda
 aws lambda update-function-code --function-name <function_name> \
   --zip-file fileb://./email_lambda.zip
+```
+
+#### Run Lambda with Localstack
+
+```shell
+make target/lambda/runnable/fn/bootstrap
+echo '{"Records":[]}' \
+  | docker run \
+      -i \
+      -e DOCKER_LAMBDA_USE_STDIN=1 \
+      -e DYNAMO_TABLE="emails_local" \
+      -e QUEUE_URL="http://localhost:4566/000000000000/emails_local" \
+      --rm \
+      -v "${PWD}/target/lambda/runnable/fn":/var/task \
+      lambci/lambda:provided
 ```
 
 ### Deploy with AWS CDK

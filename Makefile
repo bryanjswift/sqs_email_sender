@@ -53,6 +53,12 @@ target/lambda/release/email_lambda: Cargo.lock $(SHARED_SRC) $(LAMBDA_SRC)
 		-v ${HOME}/.cargo/git:/root/.cargo/git \
 		softprops/lambda-rust:${V_LAMBDA_RUST}
 
+target/lambda/runnable/fn:
+	mkdir -p target/lambda/runnable/fn
+
+target/lambda/runnable/fn/bootstrap: target/lambda/runnable/fn target/lambda/release/email_lambda
+	cp target/lambda/release/email_lambda $@
+
 # Build a zip archive which can be uploaded to AWS lambda
 email_lambda.zip: target/lambda/release/email_lambda
 	cp ./target/lambda/release/email_lambda ./bootstrap \
