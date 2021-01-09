@@ -8,16 +8,14 @@ edition = "2018"
 
 [dependencies]
 email_shared = { version = "0.1.0", path = "../email_shared" }
+futures = "0.3.9"
 lazy_static = "1.4.0"
-rusoto_core = "0.45.0"
-rusoto_dynamodb = "0.45.0"
-rusoto_sqs = { version = "0.45.0", features = [ "deserialize_structs" ] }
-serde = "1.0.117"
-serde_json = "1.0.59"
-tokio = { version = "0.2.23", features = ["macros", "rt-core"] }
+netlify_lambda = "0.2.0"
+rusoto_core = "0.46.0"
+rusoto_dynamodb = "0.46.0"
+rusoto_sqs = { version = "0.46.0", features = [ "deserialize_structs" ] }
+serde = "1.0.118"
+serde_json = "1.0.61"
+tokio = { version = "1.0.1", features = ["macros"] }
 tracing = "0.1.22"
 tracing-subscriber = { version = "0.2.15", features = ["fmt", "json"] }
-
-[dependencies.lambda]
-git = "https://github.com/awslabs/aws-lambda-rust-runtime/"
-rev = "13aa8f01813e6949ca91aedafb286591fdf32217"

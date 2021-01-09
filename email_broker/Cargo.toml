@@ -8,12 +8,13 @@ edition = "2018"
 
 [dependencies]
 email_shared = { version = "0.1.0", path = "../email_shared" }
-rusoto_core = "0.45.0"
-rusoto_dynamodb = "0.45.0"
-rusoto_sqs = "0.45.0"
-serde = "1.0.117"
-serde_json = "1.0.59"
-structopt = "0.3.20"
-tokio = { version = "0.2.23", features = ["macros", "rt-core"] }
+futures = "0.3.9"
+rusoto_core = "0.46.0"
+rusoto_dynamodb = "0.46.0"
+rusoto_sqs = "0.46.0"
+serde = "1.0.118"
+serde_json = "1.0.61"
+structopt = "0.3.21"
+tokio = { version = "1.0.1", features = ["macros"] }
 tracing = "0.1.22"
 tracing-subscriber = { version = "0.2.15", features = ["fmt", "json"] }

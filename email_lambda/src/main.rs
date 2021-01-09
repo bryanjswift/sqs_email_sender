@@ -42,13 +42,13 @@ async fn main() -> Result<(), Error> {
         .with_timer(tracing_subscriber::fmt::time::ChronoUtc::rfc3339())
         .finish();
     let _guard = tracing::subscriber::set_global_default(subscriber);
-    lambda::run(lambda::handler_fn(handler)).await?;
+    netlify_lambda::run(netlify_lambda::handler_fn(handler)).await?;
     Ok(())
 }
 
 async fn handler(
     event: SqsEvent,
-    context: lambda::Context,
+    context: netlify_lambda::Context,
 ) -> Result<CustomOutput, EmailHandlerError> {
     let handler_span = span!(
         Level::INFO,
