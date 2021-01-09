@@ -818,7 +818,7 @@ __metadata:
     "@aws-cdk/aws-logs": 1.83.0
     "@aws-cdk/aws-sqs": 1.83.0
     "@aws-cdk/core": 1.83.0
-    "@types/node": 14.14.16
+    "@types/node": 14.14.20
     "@types/tape": 4.13.0
     aws-cdk: 1.83.0
     source-map-support: 0.5.19
@@ -857,10 +857,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:14.14.16":
-  version: 14.14.16
-  resolution: "@types/node@npm:14.14.16"
-  checksum: 220a7496ec73861ad7fb4ae762618bb46ac9d5d5f92f3a2fcebfd1a81a509ff558eface7bcd1d632598a8a28f856a74b324e7165918e8334a59c221cb06d15e3
+"@types/node@npm:14.14.20":
+  version: 14.14.20
+  resolution: "@types/node@npm:14.14.20"
+  checksum: 84a9fd73de978967723f951173ff4d07dca259941d3e37c7a3dbb236c09b3f2294bb2098678a806afe6fd6cac39a7d0a1d399f602378c951bd5d01ede535d570
   languageName: node
   linkType: hard
 
