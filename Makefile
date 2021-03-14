@@ -14,11 +14,13 @@ LAMBDA_SRC := $(shell find -E $(LAMBDA) -regex '.*\.rs')
 SHARED=./email_shared
 SHARED_SRC := $(shell find -E $(SHARED) -regex '.*\.rs') 
 
-.PHONY: all broker clean lambda test
+.PHONY: all broker clean init lambda test
 
 all: broker lambda
 
 broker: target/release/email_broker
+
+init: .git/config
 
 lambda: target/release/email_lambda
 
@@ -33,7 +35,10 @@ clean:
 test: $(SHARED_SRC) $(BROKER_SRC) $(LAMBDA_SRC)
 	cargo test
 
-Cargo.lock: $(CARGO_TOML)
+.git/config: .githooks/*
+	git config core.hooksPath .githooks
+
+Cargo.lock: $(CARGO_TOML) init
 	cargo check
 	@touch -mr $(shell ls -Atd $? | head -1) $@
 
