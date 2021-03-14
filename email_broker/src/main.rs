@@ -38,7 +38,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dynamodb = DynamoDbClient::new(opt.region.clone());
     let client = Client::new(&dynamodb, &opt.table_name);
     let queue_url = &opt.queue_url;
+    let mut iteration = 0;
     loop {
+        let loop_span = span!(Level::INFO, "loop", Iteration = &iteration);
+        let _loop_guard = loop_span.enter();
         let message_list = get_sqs_email_messages(queue_url, &sqs)
             .in_current_span()
             .await;
@@ -72,6 +75,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if opt.dry_run {
             break;
         }
+        iteration = iteration + 1;
     }
     Ok(())
 }
