@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "@aws-cdk/assert": "1.93.0",
-    "@types/node": "14.14.20",
+    "@types/node": "14.14.34",
     "@types/tape": "4.13.0",
     "aws-cdk": "1.93.0",
     "tape": "5.2.2",
