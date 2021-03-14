@@ -1,4 +1,19 @@
 {
+  "rust-analyzer": {
+    "initialization_options": {
+      "completion": {
+        "autoimport": {
+          "enable": true
+        }
+      },
+      "cargo": {
+        "loadOutDirsFromCheck": true
+      },
+      "procMacro": {
+        "enable": true
+      }
+    }
+  },
   "typescript-language-server": {
     "cmd": "npx typescript-language-server --stdio --tsserver-path=.yarn/sdks/typescript/bin/tsserver"
   },
