@@ -1,4 +1,8 @@
-use rusoto_sqs::{DeleteMessageBatchRequestEntry, Message};
+use rusoto_core::RusotoError;
+use rusoto_sqs::{
+    DeleteMessageBatchRequestEntry, Message, ReceiveMessageError, ReceiveMessageRequest, Sqs,
+    SqsClient,
+};
 use serde::Deserialize;
 use serde_json;
 use std::convert::TryFrom;
@@ -63,4 +67,22 @@ impl From<&EmailPointerMessage> for DeleteMessageBatchRequestEntry {
             receipt_handle: message.handle.clone(),
         }
     }
+}
+
+/// Poll SQS at the given `queue_url` for new messages providing an iterator for `EmailIdMessage`.
+pub async fn get_sqs_email_messages(
+    queue_url: &str,
+    sqs: &SqsClient,
+) -> Result<Vec<Message>, RusotoError<ReceiveMessageError>> {
+    let request = ReceiveMessageRequest {
+        attribute_names: Some(vec![String::from("MessageGroupId")]),
+        max_number_of_messages: Some(1),
+        queue_url: queue_url.into(),
+        visibility_timeout: Some(30),
+        wait_time_seconds: Some(20),
+        ..ReceiveMessageRequest::default()
+    };
+    sqs.receive_message(request)
+        .await
+        .map(|result| result.messages.unwrap_or(Vec::new()))
 }

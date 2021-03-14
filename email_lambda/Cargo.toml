@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-email_shared = { version = "0.1.0", path = "../email_shared" }
+email_shared = { version = "0.1.1", path = "../email_shared" }
 futures = "0.3.13"
 lazy_static = "1.4.0"
 lambda_runtime = "0.3.0"

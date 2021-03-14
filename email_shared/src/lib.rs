@@ -6,3 +6,4 @@ mod error;
 mod queue;
 
 pub use crate::client::Client;
+pub use crate::queue::get_sqs_email_messages;

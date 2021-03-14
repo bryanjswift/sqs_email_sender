@@ -1,10 +1,7 @@
 mod config;
 
-use rusoto_core::RusotoError;
 use rusoto_dynamodb::DynamoDbClient;
-use rusoto_sqs::{
-    DeleteMessageBatchRequest, Message, ReceiveMessageError, ReceiveMessageRequest, Sqs, SqsClient,
-};
+use rusoto_sqs::{DeleteMessageBatchRequest, Sqs, SqsClient};
 use structopt::StructOpt;
 use tracing::{event, span, Level};
 
@@ -42,7 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         let loop_span = span!(Level::INFO, "loop", Iteration = &iteration);
         let _loop_guard = loop_span.enter();
-        let message_list = get_sqs_email_messages(queue_url, &sqs)
+        let message_list = email_shared::get_sqs_email_messages(queue_url, &sqs)
             .in_current_span()
             .await;
         let processed_messages = match message_list {
@@ -78,22 +75,4 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         iteration = iteration + 1;
     }
     Ok(())
-}
-
-/// Poll SQS at the given `queue_url` for new messages providing an iterator for `EmailIdMessage`.
-async fn get_sqs_email_messages(
-    queue_url: &str,
-    sqs: &SqsClient,
-) -> Result<Vec<Message>, RusotoError<ReceiveMessageError>> {
-    let request = ReceiveMessageRequest {
-        attribute_names: Some(vec![String::from("MessageGroupId")]),
-        max_number_of_messages: Some(1),
-        queue_url: queue_url.into(),
-        visibility_timeout: Some(30),
-        wait_time_seconds: Some(20),
-        ..ReceiveMessageRequest::default()
-    };
-    sqs.receive_message(request)
-        .await
-        .map(|result| result.messages.unwrap_or(Vec::new()))
 }
