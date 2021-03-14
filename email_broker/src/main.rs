@@ -13,6 +13,7 @@ use email_shared::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    use tracing_futures::Instrument;
     // Setup Logger
     let subscriber = tracing_subscriber::fmt()
         .with_timer(tracing_subscriber::fmt::time::ChronoUtc::rfc3339())
@@ -37,10 +38,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dynamodb = DynamoDbClient::new(opt.region.clone());
     let client = Client::new(&dynamodb, &opt.table_name);
     let queue_url = &opt.queue_url;
+    let mut iteration = 0;
     loop {
-        let message_list = get_sqs_email_messages(queue_url, &sqs).await;
+        let loop_span = span!(Level::INFO, "loop", Iteration = &iteration);
+        let _loop_guard = loop_span.enter();
+        let message_list = get_sqs_email_messages(queue_url, &sqs)
+            .in_current_span()
+            .await;
         let processed_messages = match message_list {
-            Ok(messages) => client.process_messages(messages).await,
+            Ok(messages) => client.process_messages(messages).in_current_span().await,
             Err(error) => {
                 event!(Level::ERROR, %error, "ReceiveMessageError");
                 Vec::new()
@@ -51,7 +57,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             queue_url: queue_url.into(),
         };
         if delete_messages_request.entries.len() > 0 {
-            match sqs.delete_message_batch(delete_messages_request).await {
+            match sqs
+                .delete_message_batch(delete_messages_request)
+                .in_current_span()
+                .await
+            {
                 Ok(result) => event!(Level::TRACE, ?result, "deleted messages"),
                 Err(error) => event!(Level::ERROR, %error, "Delete messages Error"),
             }
@@ -65,6 +75,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if opt.dry_run {
             break;
         }
+        iteration = iteration + 1;
     }
     Ok(())
 }
