@@ -98,10 +98,16 @@ impl From<RusotoError<GetItemError>> for GetError {
 /// Possible errors processing an SQS `Message` as an `EmailIdMessage`.
 #[derive(Clone, Debug, Error)]
 pub enum ProcessError {
+    /// Indicates some necessary operation could not be completed due to a temporary condition the
+    /// processing the `Message` should be attempted again.
     #[error("Retry")]
     Retry,
+    /// Indicates processing has skipped sending the email associated with `EmailPointerMessage`
+    /// and the `Message` should not be reprocessed later.
     #[error("Skip({0})")]
     Skip(EmailPointerMessage),
+    /// Processing result indicating the SQS `Message` must be skipped and can not be handled. This
+    /// is not a temporary or ephemeral error. Reprocessing the `Message` will also fail.
     #[error("SkipMessage({0:?})")]
     SkipMessage(Message),
 }

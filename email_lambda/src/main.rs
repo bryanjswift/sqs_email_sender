@@ -13,6 +13,7 @@ use rusoto_sqs::{DeleteMessageBatchRequest, Sqs, SqsClient};
 use serde::{Deserialize, Serialize};
 use std::env;
 use tracing::{event, span, Level};
+use tracing_futures::Instrument;
 
 const DYNAMO_TABLE: &str = "DYNAMO_TABLE";
 const QUEUE_URL: &str = "QUEUE_URL";
@@ -42,13 +43,13 @@ async fn main() -> Result<(), Error> {
         .with_timer(tracing_subscriber::fmt::time::ChronoUtc::rfc3339())
         .finish();
     let _guard = tracing::subscriber::set_global_default(subscriber);
-    netlify_lambda::run(netlify_lambda::handler_fn(handler)).await?;
+    lambda_runtime::run(lambda_runtime::handler_fn(handler)).await?;
     Ok(())
 }
 
 async fn handler(
     event: SqsEvent,
-    context: netlify_lambda::Context,
+    context: lambda_runtime::Context,
 ) -> Result<CustomOutput, EmailHandlerError> {
     let handler_span = span!(
         Level::INFO,
@@ -68,6 +69,7 @@ async fn handler(
     // Process each event record
     let entries_to_delete = client
         .process_messages(event.records.into_iter().map(|record| record.into()))
+        .in_current_span()
         .await;
     // Compare the number of messages to be deleted with the number received
     let entries_to_delete_count = entries_to_delete.len();
@@ -84,6 +86,7 @@ async fn handler(
                 entries: entries_to_delete,
                 queue_url,
             })
+            .instrument(tracing::info_span!("delete_message_batch"))
             .await;
         let error = match delete_response {
             Ok(_) if entries_to_delete_count > 0 => EmailHandlerError::PartialBatchFailure,

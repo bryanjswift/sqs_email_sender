@@ -41,6 +41,9 @@ impl Client<'_> {
     where
         I: IntoIterator<Item = Message>,
     {
+        // Keep track of the successfully processed messages so in the event of partial (or total)
+        // batch failure the successful messages can be deleted but the errored messages will get
+        // redelivered.
         let mut processed_message_handles = Vec::new();
         for message in messages {
             let message_span =
@@ -126,10 +129,7 @@ impl Client<'_> {
             event!(Level::ERROR, %error, "update email failed");
             return Err(ProcessError::Retry);
         }
-        // 8. Messages are automatically removed from the queue if lambda succeeds. Keep track of
-        //    the successfully processed messages so in the event of partial (or total) batch
-        //    failure the successful messages can be deleted but the errored messages will get
-        //    redelivered.
+        // 8. Messages delivered and state tracked successfully
         Ok(pointer)
     }
 
